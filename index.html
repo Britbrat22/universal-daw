@@ -1,53 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>AI Audio Editor – Full Auto-Mastering DAW</title>
+<meta charset="UTF-8"/>
+<title>AI Editor – Spectrogram + Echo-Paint</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <style>
-:root{
-  --bg:#0b0b0b;
-  --panel:#151515;
-  --accent:#4ecdc4;
-  --danger:#ff6b6b;
-  --text:#fff;
-  --sub:#aaa;
-  --border:#222;
-}
+:root{--bg:#0b0b0b;--panel:#151515;--accent:#4ecdc4;--danger:#ff6b6b;--text:#fff;--sub:#aaa;--border:#222;}
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif;}
-body{background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
-header{padding:12px;background:#161616;display:flex;justify-content:space-between;align-items:center;}
-button{background:var(--accent);border:none;padding:8px 12px;border-radius:6px;font-weight:bold;cursor:pointer;color:#000;}
+body{background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;}
+header{padding:12px;background:#161616;display:flex;justify-content:space-between;}
+button{background:var(--accent);border:none;padding:6px 10px;border-radius:4px;font-weight:bold;color:#000;cursor:pointer;}
 button.danger{background:var(--danger);}
 main{display:flex;flex:1;overflow:hidden;}
-aside{width:260px;background:var(--panel);padding:12px;overflow-y:auto;border-right:1px solid var(--border);}
-section{margin-bottom:15px;}
-h3{margin:8px 0;color:var(--accent);}
-label{font-size:12px;color:var(--sub);}
-input[type=range]{width:100%;margin:4px 0;}
-.editor{flex:1;padding:10px;display:flex;flex-direction:column;gap:10px;}
-.canvas-wrap{position:relative;background:#000;border:1px solid var(--border);border-radius:6px;}
-canvas{width:100%;height:200px;cursor:crosshair;}
+aside{width:260px;background:var(--panel);padding:10px;overflow-y:auto;border-right:1px solid var(--border);}
+section{margin-bottom:12px;}
+h3{margin:6px 0;color:var(--accent);font-size:13px;}
+label{font-size:11px;color:var(--sub);}
+input[type=range]{width:100%;margin:3px 0;}
+.editor{flex:1;padding:8px;display:flex;flex-direction:column;}
+.canvas-wrap{position:relative;background:#000;border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+canvas{width:100%;height:150px;cursor:crosshair;}
 #selection,#playhead{position:absolute;top:0;bottom:0;pointer-events:none;}
-#selection{background:rgba(78,205,196,.25);border:2px solid var(--accent);display:none;}
+#selection{background:rgba(78,205,196,.25);border:1px solid var(--accent);display:none;}
 #playhead{width:2px;background:#ff6b6b;display:none;}
-footer{padding:8px;text-align:center;background:#161616;font-size:14px;color:var(--sub);}
-.right{width:260px;background:var(--panel);padding:12px;border-left:1px solid var(--border);}
-.compare-btn{display:flex;gap:6px;}
-.compare-btn button{flex:1;}
-.history{max-height:140px;overflow-y:auto;font-size:11px;margin-top:6px;}
-.ai-box{background:rgba(0,0,0,.3);padding:8px;border-radius:4px;font-size:11px;margin-top:6px;}
-.chat-log{max-height:120px;overflow-y:auto;font-size:11px;background:#000;border:1px solid #333;border-radius:4px;padding:6px;margin-top:6px;}
-.chat-input{width:100%;margin-top:6px;font-size:11px;padding:6px;border:1px solid #333;border-radius:4px;background:#111;color:#fff;}
+#specCanvas{width:100%;height:120px;cursor:crosshair;}
+.right{width:260px;background:var(--panel);padding:10px;border-left:1px solid var(--border);font-size:11px;}
+.history{max-height:120px;overflow-y:auto;}
+.ai-box{background:rgba(0,0,0,.3);padding:6px;border-radius:3px;margin-top:4px;}
+footer{padding:6px;text-align:center;background:#161616;font-size:12px;color:var(--sub);}
+.info{font-size:10px;color:#888;margin-top:4px;}
 </style>
 </head>
 <body>
 
 <header>
-  <div>🎵 AI Audio Editor – Full Auto-Mastering</div>
+  <div>🎵 AI Editor – Spectrogram + Echo-Paint</div>
   <div>
-    <button onclick="openFile()">📁 Import Audio</button>
-    <button onclick="exportWav()">💾 Export WAV</button>
+    <button onclick="openFile()">📁 Load</button>
+    <button onclick="exportWav()">💾 Export</button>
     <input type="file" id="file" accept="audio/*" hidden>
   </div>
 </header>
@@ -62,32 +52,25 @@ footer{padding:8px;text-align:center;background:#161616;font-size:14px;color:var
   </section>
 
   <section>
-    <h3>🔍 AI Analysis</h3>
-    <button onclick="aiAnalyze()">Analyze Audio Quality</button>
-    <div id="aiReport" class="ai-box">Press Analyze to start</div>
+    <h3>Wind / Noise</h3>
+    <button onclick="deleteSelection()">🗑️ Delete Selected</button>
+    <div class="info">Select noisy area on waveform or spectrogram → Delete</div>
   </section>
 
   <section>
-    <h3>🚀 AI Auto-Fix</h3>
-    <button onclick="aiAutoFix()">Auto-Fix All Issues</button>
-    <button onclick="aiDenoise()">🔧 AI Denoise Vocals</button>
-    <button onclick="aiEnhanceClarity()">✨ Enhance Clarity</button>
-    <button onclick="aiSyncVocals()">🎯 Sync Vocals to Beat</button>
+    <h3>Echo Paint</h3>
+    <label>Echo amount</label>
+    <input id="echoAmt" type="range" min="0" max="100" value="30">
+    <label>Delay ms</label>
+    <input id="delayMs" type="range" min="20" max="500" value="120">
+    <button onclick="toggleEchoPaint()">🎨 Echo-Paint (hold Shift + drag)</button>
   </section>
 
   <section>
-    <h3>📻 Professional Mastering</h3>
-    <button onclick="aiRadioMaster()">Master for Radio (-16 LUFS)</button>
-    <button onclick="aiNormalize()">Smart Normalize</button>
-    <button onclick="aiCompress()">AI Compression</button>
-  </section>
-
-  <section>
-    <h3>Manual Effects</h3>
-    <label>Reverb</label><input id="reverb" type="range" min="0" max="100" value="0">
-    <label>Echo</label><input id="echo" type="range" min="0" max="100" value="0">
-    <label>Pitch (semitones)</label><input id="pitch" type="range" min="-12" max="12" value="0">
-    <button onclick="applyEffects()">Apply to Selection</button>
+    <h3>Zoom</h3>
+    <button onclick="zoomIn()">Zoom In</button>
+    <button onclick="zoomOut()">Zoom Out</button>
+    <button onclick="zoomReset()">Reset</button>
   </section>
 
   <section>
@@ -100,10 +83,15 @@ footer{padding:8px;text-align:center;background:#161616;font-size:14px;color:var
 
 <!-- MIDDLE -->
 <div class="editor">
+  <!-- WAVEFORM -->
   <div class="canvas-wrap">
     <canvas id="wave"></canvas>
     <div id="selection"></div>
     <div id="playhead"></div>
+  </div>
+  <!-- SPECTROGRAM -->
+  <div class="canvas-wrap">
+    <canvas id="specCanvas"></canvas>
   </div>
 </div>
 
@@ -111,23 +99,14 @@ footer{padding:8px;text-align:center;background:#161616;font-size:14px;color:var
 <div class="right">
   <section>
     <h3>Before / After</h3>
-    <div class="compare-btn">
-      <button onclick="playBefore()">Before</button>
-      <button onclick="playAfter()">After</button>
-    </div>
+    <button onclick="playBefore()">Before</button>
+    <button onclick="playAfter()">After</button>
     <div id="compareInfo" class="ai-box">Load audio to compare</div>
   </section>
 
   <section>
-    <h3>Edit History</h3>
+    <h3>History</h3>
     <div id="history" class="history">No edits yet</div>
-    <button onclick="clearHistory()">Clear All</button>
-  </section>
-
-  <section>
-    <h3>💬 AI Chat</h3>
-    <div id="chatLog" class="chat-log">Chat ready…</div>
-    <input class="chat-input" id="chatInput" placeholder="Ask me anything…" onkeypress="if(event.key==='Enter')chatSend()">
   </section>
 </div>
 </main>
@@ -135,10 +114,13 @@ footer{padding:8px;text-align:center;background:#161616;font-size:14px;color:var
 <footer id="status">Load audio to begin</footer>
 
 <script>
-/* ==========  CORE AUDIO  ========== */
+/* ==========  CORE  ========== */
 let ctx, originalBuffer, editedBuffer, undoStack=[], source;
 let selection={start:0,end:0,active:false};
+let zoom=1, offset=0;               // pixels per sample
+let echoPaint=false;                // shift-drag echo mode
 const canvas=document.getElementById("wave"), selDiv=document.getElementById("selection"), playheadDiv=document.getElementById("playhead"), cctx=canvas.getContext("2d");
+const specCanvas=document.getElementById("specCanvas"), sctx=specCanvas.getContext("2d");
 function status(msg){document.getElementById("status").textContent=msg;}
 function openFile(){document.getElementById("file").click();}
 document.getElementById("file").onchange=async e=>{
@@ -146,182 +128,158 @@ document.getElementById("file").onchange=async e=>{
   const buf=await e.target.files[0].arrayBuffer();
   originalBuffer=await ctx.decodeAudioData(buf);
   editedBuffer=cloneBuffer(originalBuffer);
-  drawWave(); addHistory("Original loaded");
-  status("Audio ready – run AI analysis");
+  drawWave(); drawSpectrogram();
+  addHistory("Original loaded");
+  status("Audio ready – zoom / select / paint echo");
 };
 function cloneBuffer(b){
   const nb=ctx.createBuffer(b.numberOfChannels,b.length,b.sampleRate);
   for(let c=0;c<b.numberOfChannels;c++) nb.getChannelData(c).set(b.getChannelData(c));
   return nb;
 }
+
 /* ==========  DRAW  ========== */
 function drawWave(){
-  canvas.width=canvas.offsetWidth; canvas.height=200;
+  canvas.width=canvas.offsetWidth; canvas.height=150;
   const data=editedBuffer.getChannelData(0);
-  const step=Math.ceil(data.length/canvas.width);
+  const len=data.length;
+  const step=Math.max(1,Math.floor(len/(canvas.width*zoom)));
+  const startSample=Math.floor(offset*len);
   cctx.clearRect(0,0,canvas.width,canvas.height);
   cctx.fillStyle="#4ecdc4";
-  for(let i=0;i<canvas.width;i++){
+  for(let x=0;x<canvas.width;x++){
     let min=1,max=-1;
-    for(let j=0;j<step;j++){const d=data[i*step+j];if(d<min)min=d;if(d>max)max=d;}
-    cctx.fillRect(i,(1+min)*100,1,Math.max(1,(max-min)*100));
+    const s=startSample+x*step*zoom;
+    for(let j=0;j<step;j++){
+      const v=data[Math.min(s+j,len-1)];
+      if(v<min)min=v; if(v>max)max=v;
+    }
+    cctx.fillRect(x,(1+min)*75,1,Math.max(1,(max-min)*75));
   }
 }
+function drawSpectrogram(){
+  specCanvas.width=specCanvas.offsetWidth; specCanvas.height=120;
+  const data=editedBuffer.getChannelData(0);
+  const len=data.length;
+  const step=Math.max(1,Math.floor(len/(specCanvas.width*zoom)));
+  const startSample=Math.floor(offset*len);
+  const fftSize=2048;
+  const analyser=ctx.createAnalyser(); analyser.fftSize=fftSize;
+  const buffer=ctx.createBuffer(1,fftSize,ctx.sampleRate);
+  const bufData=buffer.getChannelData(0);
+  sctx.clearRect(0,0,specCanvas.width,specCanvas.height);
+  for(let x=0;x<specCanvas.width;x++){
+    const s=startSample+x*step*zoom;
+    for(let i=0;i<fftSize;i++) bufData[i]=data[Math.min(s+i,len-1)];
+    analyser.getFloatFrequencyData(bufData);
+    for(let y=0;y<specCanvas.height;y++){
+      const bin=Math.floor(y/specCanvas.height*(fftSize/2));
+      const db=bufData[bin];
+      const val=Math.max(0,Math.min(1,(db+140)/140));
+      sctx.fillStyle=`hsl(${240-val*240},100%,${val*60}%)`;
+      sctx.fillRect(x,specCanvas.height-y,1,1);
+    }
+  }
+}
+
 /* ==========  SELECTION  ========== */
-canvas.onmousedown=e=>{
-  const r=canvas.getBoundingClientRect();
-  selection.start=((e.clientX-r.left)/canvas.width)*editedBuffer.duration;
+canvas.onmousedown=specCanvas.onmousedown=startSel;
+function startSel(e){
+  const r=e.target.getBoundingClientRect();
+  const x=e.clientX-r.left;
+  if(e.shiftKey){echoPaint=true; startEchoPaint(x); return;}
+  selection.start=pixToTime(x);
   selection.active=true;
-};
-canvas.onmousemove=e=>{
+}
+window.onmousemove=e=>{
   if(!selection.active)return;
   const r=canvas.getBoundingClientRect();
-  selection.end=((e.clientX-r.left)/canvas.width)*editedBuffer.duration;
+  selection.end=pixToTime(e.clientX-r.left);
   updateSel();
 };
-canvas.onmouseup=()=>selection.active=false;
+window.onmouseup=()=>selection.active=false;
+function pixToTime(x){
+  const len=editedBuffer.length;
+  const startSample=Math.floor(offset*len);
+  return (startSample+x*zoom)/ctx.sampleRate;
+}
 function updateSel(){
-  const d=editedBuffer.duration, s=Math.min(selection.start,selection.end), e=Math.max(selection.start,selection.end);
-  selDiv.style.display="block"; selDiv.style.left=(s/d*100)+"%"; selDiv.style.width=((e-s)/d*100)+"%";
+  const d=editedBuffer.duration;
+  const s=Math.min(selection.start,selection.end), e=Math.max(selection.start,selection.end);
+  const startX=timeToPix(s), endX=timeToPix(e);
+  selDiv.style.display="block";
+  selDiv.style.left=startX+"px";
+  selDiv.style.width=(endX-startX)+"px";
 }
-function clearSelection(){selDiv.style.display="none"; selection.start=selection.end=0;}
-function selectAll(){selection.start=0; selection.end=editedBuffer.duration; updateSel();}
-/* ==========  UTILS  ========== */
-function extract(s,e){
-  const sr=editedBuffer.sampleRate, ss=Math.floor(s*sr), es=Math.floor(e*sr);
-  const nb=ctx.createBuffer(editedBuffer.numberOfChannels,es-ss,sr);
-  for(let c=0;c<nb.numberOfChannels;c++) nb.getChannelData(c).set(editedBuffer.getChannelData(c).slice(ss,es));
-  return nb;
+function timeToPix(t){
+  const len=editedBuffer.length;
+  const startSample=Math.floor(offset*len);
+  return (t*ctx.sampleRate-startSample)/zoom;
 }
-function replace(pb,s,e){
-  const sr=editedBuffer.sampleRate, ss=Math.floor(s*sr);
-  const nb=cloneBuffer(editedBuffer);
-  for(let c=0;c<nb.numberOfChannels;c++) nb.getChannelData(c).set(pb.getChannelData(c),ss);
-  return nb;
+
+/* ==========  ECHO PAINT  ========== */
+let echoRect={};
+function startEchoPaint(x){
+  echoRect.startX=x; echoRect.startS=pixToTime(x);
 }
-/* ==========  OFFLINE PROCESS  ========== */
-async function process(buf,ops){
-  const off=new OfflineAudioContext(buf.numberOfChannels,buf.length,buf.sampleRate);
-  const src=off.createBufferSource(); src.buffer=buf;
-  let node=src;
-  if(ops.pitch) src.playbackRate.value=Math.pow(2,ops.pitch/12);
-  if(ops.reverb){
-    const con=off.createConvolver(), len=off.sampleRate*2, imp=off.createBuffer(2,len,off.sampleRate);
-    for(let c=0;c<2;c++){const d=imp.getChannelData(c);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len)*ops.reverb*0.3;}
-    con.buffer=imp; node.connect(con); node=con;
-  }
-  if(ops.echo){
-    const d=off.createDelay(), g=off.createGain();
-    d.delayTime.value=0.25; g.gain.value=ops.echo;
-    d.connect(g); g.connect(d); node.connect(d); node=d;
-  }
-  node.connect(off.destination);
-  src.start(0);
-  return await off.startRendering();
-}
-/* ==========  AI FEATURES  ========== */
-let aiData={bpm:0,peak:0,rms:0,quality:100,issues:[]};
-async function aiAnalyze(){
-  if(!originalBuffer){alert("Load audio first");return;}
-  status("AI analyzing…");
-  const data=originalBuffer.getChannelData(0);
-  aiData.peak=Math.max(...data.map(Math.abs));
-  aiData.rms=Math.sqrt(data.map(s=>s*s).reduce((a,b)=>a+b)/data.length);
-  aiData.quality=Math.max(0,100-(aiData.peak>0.95?30:0)-(aiData.rms<0.05?20:0));
-  aiData.bpm=await detectBPM(originalBuffer);
-  aiData.issues=[];
-  if(aiData.peak>0.95)aiData.issues.push("Clipping detected");
-  if(aiData.rms<0.05)aiData.issues.push("Very low level");
-  document.getElementById("aiReport").innerHTML=
-    `Peak: ${(aiData.peak*100).toFixed(1)}%<br>`+
-    `RMS: ${(aiData.rms*100).toFixed(1)}%<br>`+
-    `BPM: ${aiData.bpm}<br>`+
-    `Quality: ${aiData.quality.toFixed(0)}%<br>`+
-    `Issues: ${aiData.issues.join(", ")||"None"}`;
-  status("Analysis complete");
-}
-async function detectBPM(buf){
-  const offline=new OfflineAudioContext(1,buf.length,buf.sampleRate);
-  const src=offline.createBufferSource();
-  src.buffer=buf;
-  const analyser=offline.createAnalyser();
-  analyser.fftSize=2048;
-  src.connect(analyser);
-  src.connect(offline.destination);
-  src.start();
-  await offline.startRendering();
-  return 120+Math.floor(Math.random()*20); // stub – real BPM needs onset algo
-}
-/* one-click auto-fix chain */
-async function aiAutoFix(){
-  if(!originalBuffer){alert("Load audio first");return;}
+specCanvas.onmousemove=e=>{
+  if(!echoPaint)return;
+  const r=specCanvas.getBoundingClientRect();
+  echoRect.endX=e.clientX-r.left; echoRect.endS=pixToTime(echoRect.endX);
+  drawWave(); drawSpectrogram();
+  sctx.strokeStyle="#ff0"; sctx.lineWidth=2;
+  sctx.strokeRect(echoRect.startX,0,echoRect.endX-echoRect.startX,specCanvas.height);
+};
+specCanvas.onmouseup=async()=>{
+  if(!echoPaint)return;
+  echoPaint=false;
   undoStack.push(cloneBuffer(editedBuffer));
-  status("AI fixing…");
-  // denoise + normalize + light compression + radio EQ
-  let buf=editedBuffer;
-  buf=await aiDenoiseWorker(buf);
-  buf=await aiNormalizeWorker(buf);
-  buf=await aiRadioEQWorker(buf);
-  editedBuffer=buf;
-  drawWave(); addHistory("AI Auto-Fix applied");
-  status("Auto-fix finished");
-}
-async function aiDenoiseWorker(buf){
+  const amt=document.getElementById("echoAmt").value/100;
+  const ms=document.getElementById("delayMs").value/1000;
+  const buf=extract(echoRect.startS,echoRect.endS);
+  const processed=await echoRegion(buf,amt,ms);
+  editedBuffer=replace(processed,echoRect.startS,echoRect.endS);
+  drawWave(); drawSpectrogram();
+  addHistory("Echo painted");
+};
+async function echoRegion(buf,amt,ms){
   const off=new OfflineAudioContext(buf.numberOfChannels,buf.length,buf.sampleRate);
   const src=off.createBufferSource(); src.buffer=buf;
-  const hp=off.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=80;
-  const lp=off.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=9000;
-  src.connect(hp).connect(lp).connect(off.destination);
+  const dry=off.createGain(); dry.gain.value=1-amt;
+  const wet=off.createGain(); wet.gain.value=amt;
+  const delay=off.createDelay(1); delay.delayTime.value=ms;
+  const fb=off.createGain(); fb.gain.value=0.4;
+  src.connect(dry);
+  src.connect(delay); delay.connect(wet); delay.connect(fb); fb.connect(delay);
+  dry.connect(off.destination); wet.connect(off.destination);
   src.start(0);
   return await off.startRendering();
 }
-async function aiNormalizeWorker(buf){
-  const off=new OfflineAudioContext(buf.numberOfChannels,buf.length,buf.sampleRate);
-  const src=off.createBufferSource(); src.buffer=buf;
-  const gain=off.createGain();
-  const peak=Math.max(...buf.getChannelData(0).map(Math.abs));
-  gain.gain.value=0.95/peak;
-  src.connect(gain).connect(off.destination);
-  src.start(0);
-  return await off.startRendering();
-}
-async function aiRadioEQWorker(buf){
-  const off=new OfflineAudioContext(buf.numberOfChannels,buf.length,buf.sampleRate);
-  const src=off.createBufferSource(); src.buffer=buf;
-  const eq1=off.createBiquadFilter(); eq1.type="highshelf"; eq1.frequency.value=4000; eq1.gain.value=2;
-  const eq2=off.createBiquadFilter(); eq2.type="lowshelf"; eq2.frequency.value=200; eq2.gain.value=-1;
-  src.connect(eq1).connect(eq2).connect(off.destination);
-  src.start(0);
-  return await off.startRendering();
-}
-/* individual AI buttons */
-async function aiDenoise(){if(!originalBuffer)return; undoStack.push(cloneBuffer(editedBuffer)); editedBuffer=await aiDenoiseWorker(editedBuffer); drawWave(); addHistory("AI denoise");}
-async function aiEnhanceClarity(){if(!originalBuffer)return; undoStack.push(cloneBuffer(editedBuffer)); editedBuffer=await aiRadioEQWorker(editedBuffer); drawWave(); addHistory("AI clarity enhancer");}
-async function aiSyncVocals(){if(!originalBuffer)return; undoStack.push(cloneBuffer(editedBuffer)); /* stub: time-stretch to grid */ addHistory("AI vocal sync (demo)");}
-async function aiRadioMaster(){if(!originalBuffer)return; undoStack.push(cloneBuffer(editedBuffer)); editedBuffer=await aiNormalizeWorker(await aiRadioEQWorker(editedBuffer)); drawWave(); addHistory("Radio mastering");}
-async function aiNormalize(){if(!originalBuffer)return; undoStack.push(cloneBuffer(editedBuffer)); editedBuffer=await aiNormalizeWorker(editedBuffer); drawWave(); addHistory("AI normalize");}
-async function aiCompress(){if(!originalBuffer)return; undoStack.push(cloneBuffer(editedBuffer)); /* stub */ addHistory("AI compression (demo)");}
+function toggleEchoPaint(){echoPaint=false; status("Echo-paint: hold Shift + drag on spectrogram");}
 
-/* ==========  CHAT ASSISTANT  ========== */
-function chatSend(){
-  const inp=document.getElementById("chatInput");
-  const log=document.getElementById("chatLog");
-  const q=inp.value.trim(); if(!q)return;
-  log.innerHTML+=`<div><b>You:</b> ${q}</div>`;
-  let a="";
-  if(q.toLowerCase().includes("noise"))a="💡 Try the AI denoise button for background noise.";
-  else if(q.toLowerCase().includes("clipping"))a="💡 Use Auto-Fix to reduce clipping.";
-  else if(q.toLowerCase().includes("bpm"))a=`💡 Detected BPM is ${aiData.bpm}`;
-  else a="💡 I can help with noise, clipping, EQ, etc. Just ask!";
-  log.innerHTML+=`<div><b>AI:</b> ${a}</div>`;
-  log.scrollTop=log.scrollHeight; inp.value="";
-}
+/* ==========  ZOOM  ========== */
+function zoomIn(){zoom=Math.min(zoom*1.5,100); drawWave(); drawSpectrogram();}
+function zoomOut(){zoom=Math.max(zoom/1.5,1); drawWave(); drawSpectrogram();}
+function zoomReset(){zoom=1; offset=0; drawWave(); drawSpectrogram();}
+specCanvas.onwheel=e=>{e.preventDefault(); zoom*=e.deltaY<0?1.1:0.9; zoom=Math.max(1,Math.min(zoom,200)); drawWave(); drawSpectrogram();};
 
-/* ==========  BEFORE/AFTER  ========== */
+/* ==========  PLAYBACK  ========== */
+function playSelection(){stop(); const b=extract(selection.start,selection.end); source=ctx.createBufferSource(); source.buffer=b; source.connect(ctx.destination); source.start();}
+function playAll(){stop(); source=ctx.createBufferSource(); source.buffer=editedBuffer; source.connect(ctx.destination); source.start();}
+function stop(){if(source)source.stop();}
 function playBefore(){stop(); source=ctx.createBufferSource(); source.buffer=originalBuffer; source.connect(ctx.destination); source.start(); document.getElementById("compareInfo").textContent="Playing: original (before)";}
 function playAfter(){stop(); source=ctx.createBufferSource(); source.buffer=editedBuffer; source.connect(ctx.destination); source.start(); document.getElementById("compareInfo").textContent="Playing: edited (after)";}
 
-/* ==========  HISTORY  ========== */
+/* ==========  DELETE  ========== */
+async function deleteSelection(){
+  if(selection.start===selection.end){alert("Select a region");return;}
+  undoStack.push(cloneBuffer(editedBuffer));
+  editedBuffer=replace(ctx.createBuffer(editedBuffer.numberOfChannels,0,editedBuffer.sampleRate),selection.start,selection.end);
+  drawWave(); drawSpectrogram();
+  addHistory("Deleted selected region");
+}
+
+/* ==========  HISTORY / EXPORT  ========== */
 function addHistory(action){
   const box=document.getElementById("history");
   const entry=document.createElement("div");
@@ -330,30 +288,11 @@ function addHistory(action){
   box.insertBefore(entry,box.firstChild);
   while(box.children.length>10)box.removeChild(box.lastChild);
 }
-function clearHistory(){document.getElementById("history").innerHTML="No edits yet";}
-
-/* ==========  PLAYBACK  ========== */
-function playSelection(){stop(); const b=extract(selection.start,selection.end); source=ctx.createBufferSource(); source.buffer=b; source.connect(ctx.destination); source.start();}
-function playAll(){stop(); source=ctx.createBufferSource(); source.buffer=editedBuffer; source.connect(ctx.destination); source.start();}
-function stop(){if(source)source.stop();}
-
-/* ==========  MANUAL EFFECTS  ========== */
-async function applyEffects(){
-  if(selection.start===selection.end){alert("Select a region");return;}
-  undoStack.push(cloneBuffer(editedBuffer));
-  const sb=extract(selection.start,selection.end);
-  const ops={reverb:document.getElementById("reverb").value/100,echo:document.getElementById("echo").value/100,pitch:document.getElementById("pitch").value};
-  const processed=await process(sb,ops);
-  editedBuffer=replace(processed,selection.start,selection.end);
-  drawWave(); addHistory("Manual effects applied");
-}
-
-/* ==========  WAV EXPORT  ========== */
 function exportWav(){
   const blob=bufferToWav(editedBuffer);
   const a=document.createElement("a");
   a.href=URL.createObjectURL(blob);
-  a.download="AI-mastered.wav";
+  a.download="edited.wav";
   a.click();
 }
 function bufferToWav(b){
@@ -368,7 +307,7 @@ function bufferToWav(b){
 }
 
 /* ==========  INIT  ========== */
-window.onload=()=>{addHistory("App ready"); status("Ready – load audio to begin");};
+window.onload=()=>{addHistory("App ready"); status("Ready – load audio → zoom → select → paint echo / delete noise");};
 </script>
 </body>
 </html>
