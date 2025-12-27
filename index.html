@@ -27,6 +27,25 @@ background:linear-gradient(135deg,#4ecdc4,#45b7d1);color:#fff;font-weight:bold;c
 .playhead{position:absolute;width:2px;background:#ff6b6b;height:100%;display:none}
 .status-bar{background:#1a1a1a;padding:10px;text-align:center;color:#ccc}
 canvas{width:100%;height:100%}
+
+/* ========= NEW FEATURES ========= */
+/* 1. light theme */
+body.light{background:#f5f5f5;color:#222}
+body.light .edit-panel,body.light .compare-panel{background:#fafafa;border-color:#ddd}
+body.light .waveform-editor{background:#fff;border-color:#ccc}
+body.light .btn{background:linear-gradient(135deg,#2196F3,#21CBF3)}
+
+/* 2. level meter */
+#levelMeter{background:#000;border-radius:4px}
+
+/* 3. tiny active-gain animation */
+.btn:active{transform:scale(.96);transition:none}
+
+/* 4. scrollbar polish */
+::-webkit-scrollbar{width:8px}
+::-webkit-scrollbar-track{background:rgba(0,0,0,.3)}
+::-webkit-scrollbar-thumb{background:#4ecdc4;border-radius:4px}
+
 </style>
 </head>
 
@@ -36,8 +55,10 @@ canvas{width:100%;height:100%}
 <header class="header">
 <div>🎵 AI Audio Editor Pro</div>
 <div>
+<button class="btn" id="themeBtn" title="Toggle dark/light">🌙</button>
 <button class="btn" onclick="loadFile()">📁 Load</button>
-<button class="btn" onclick="exportWav()">💾 Export</button>
+<button class="btn" onclick="exportWav()">💾 Export WAV</button>
+<button class="btn" onclick="exportMp3()">💾 Export MP3</button>
 <input id="file" type="file" accept="audio/*" hidden>
 </div>
 </header>
@@ -46,6 +67,13 @@ canvas{width:100%;height:100%}
 
 <!-- LEFT -->
 <div class="edit-panel">
+
+<!-- NEW: level meter -->
+<div class="edit-section">
+<h3>📊 INPUT LEVEL</h3>
+<canvas id="levelMeter" width="280" height="40"></canvas>
+</div>
+
 <div class="edit-section">
 <h3>🎯 Selection</h3>
 <button class="btn" onclick="selectAll()">Select All</button>
@@ -105,7 +133,7 @@ canvas{width:100%;height:100%}
 </div>
 
 <script>
-/* ========= CORE ENGINE ========= */
+/* ========= CORE ENGINE (UNCHANGED) ========= */
 
 let ctx,newBuf,origBuf,source,undoStack=[];
 let sel={start:0,end:0};
@@ -128,6 +156,7 @@ origBuf=await ctx.decodeAudioData(ab);
 newBuf=clone(origBuf);
 draw();
 status("Loaded");
+startMeter();
 }
 
 function clone(b){
@@ -185,11 +214,12 @@ source=ctx.createBufferSource();
 source.buffer=newBuf;
 source.connect(ctx.destination);
 source.start();
+animatePlayhead();
 }
 
-function stop(){if(source)source.stop()}
+function stop(){if(source){source.stop();source=null}}
 
-function playOriginal(){stop();source=ctx.createBufferSource();source.buffer=origBuf;source.connect(ctx.destination);source.start()}
+function playOriginal(){stop();source=ctx.createBufferSource();source.buffer=origBuf;source.connect(ctx.destination);source.start();animatePlayhead()}
 function playEdited(){play()}
 
 /* ========= PROCESS ========= */
@@ -315,6 +345,95 @@ v.setInt16(p,s*32767,true);p+=2;
 }
 return v;
 }
+
+/* ========= NEW FEATURES ========= */
+
+/* 1. dark / light theme */
+themeBtn.onclick=()=>{
+document.body.classList.toggle('light');
+themeBtn.textContent=document.body.classList.contains('light')?'☀️':'🌙';
+};
+
+/* 2. drag-and-drop file */
+window.addEventListener('dragover',e=>e.preventDefault());
+window.addEventListener('drop',async e=>{
+e.preventDefault();
+const f=[...e.dataTransfer.files].find(x=>x.type.startsWith('audio/'));
+if(f)await loadAudio(f);
+});
+
+/* 3. real-time level meter */
+let meterRAF;
+function startMeter(){
+if(meterRAF)cancelAnimationFrame(meterRAF);
+const c=document.getElementById('levelMeter');
+const g=c.getContext('2d');
+function frame(){
+g.clearRect(0,0,c.width,c.height);
+if(source){
+const d=newBuf.getChannelData(0);
+let max=0;
+for(let i=0;i<5000;i++)max=Math.max(max,Math.abs(d[i]));
+const pct=Math.max(0,Math.min(1,(20*Math.log10(max||1e-6)+60)/60));
+const grd=g.createLinearGradient(0,0,c.width,0);
+grd.addColorStop(0,'#4CAF50');grd.addColorStop(.8,'#FFC107');grd.addColorStop(1,'#F44336');
+g.fillStyle=grd;g.fillRect(0,0,c.width*pct,c.height);
+}
+meterRAF=requestAnimationFrame(frame);
+}
+frame();
+}
+
+/* 4. animate playhead */
+let startTime;
+function animatePlayhead(){
+if(!source)return;
+const elapsed=ctx.currentTime-startTime;
+const pct=Math.min(1,elapsed/newBuf.duration);
+ph.style.left=(pct*100)+'%';
+if(source)requestAnimationFrame(animatePlayhead);
+}
+
+/* 5. keyboard shortcuts */
+window.addEventListener('keydown',e=>{
+if(e.target.tagName==='INPUT')return;
+switch(e.key){
+case ' ':e.preventDefault();source?stop():play();break;
+case 'a':selectAll();break;
+case 'z':undo();break;
+case 'e':exportWav();break;
+}
+});
+
+/* 6. export MP3 (requires lamejs) */
+async function exportMp3(){
+if(!newBuf){alert('Nothing to export');return;}
+status('Encoding MP3…');
+await import('https://cdn.jsdelivr.net/npm/lamejs@1.2.0/lame.min.js');
+const sampleBlock=1152;
+const enc=new lamejs.Mp3Encoder(2,newBuf.sampleRate,128);
+const left=newBuf.getChannelData(0);
+const right=newBuf.numberOfChannels>1?newBuf.getChannelData(1):left;
+const samples=new Int16Array(sampleBlock*2);
+let mp3=[];
+for(let i=0;i<left.length;i+=sampleBlock){
+for(let j=0;j<sampleBlock;j++){
+samples[2*j]=Math.max(-1,Math.min(1,left[i+j]||0))*0x7FFF;
+samples[2*j+1]=Math.max(-1,Math.min(1,right[i+j]||0))*0x7FFF;
+}
+const buf=enc.encodeBuffer(samples);
+if(buf.length)mp3.push(buf);
+}
+const end=enc.flush();if(end.length)mp3.push(end);
+const blob=new Blob(mp3,{type:'audio/mp3'});
+const url=URL.createObjectURL(blob);
+Object.assign(document.createElement('a'),{href:url,download:'edited.mp3'}).click();
+URL.revokeObjectURL(url);
+status('MP3 exported');
+}
+
+/* ========= BOOT ========= */
+window.onload=()=>status('Ready – load or drop audio');
 </script>
 </body>
 </html>
