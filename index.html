@@ -1,3 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Audio Editor</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        canvas { border: 1px solid #ccc; cursor: crosshair; }
+        .controls { margin: 10px 0; }
+        button { margin: 5px; padding: 8px 16px; }
+        input[type="range"] { width: 200px; }
+        label { display: inline-block; width: 120px; }
+    </style>
+</head>
+<body>
+    <h1>Audio Editor</h1>
+    
+    <div class="controls">
+        <input type="file" id="fileInput" accept="audio/*">
+        <button onclick="playAll()">Play</button>
+        <button onclick="stopPlayback()">Stop</button>
+        <button onclick="undoLastEdit()">Undo</button>
+    </div>
+    
+    <div class="controls">
+        <button onclick="deleteSelection()">Delete Selection</button>
+        <button onclick="fadeInSelection()">Fade In</button>
+        <button onclick="fadeOutSelection()">Fade Out</button>
+        <button onclick="applySelectedEffects()">Apply Effects</button>
+    </div>
+    
+    <div class="controls">
+        <label>Reverb: <input type="range" id="reverbAmount" min="0" max="100" value="0"></label>
+        <label>Echo: <input type="range" id="echoAmount" min="0" max="100" value="0"></label>
+        <label>Pitch: <input type="range" id="pitchShift" min="-12" max="12" value="0"></label>
+    </div>
+    
+    <canvas id="waveform" width="800" height="200"></canvas>
+    
+    <div class="controls">
+        <button onclick="exportWAV()">Export WAV</button>
+    </div>
+
 <script>
 /* ===============================
    CORE AUDIO ENGINE (FIXED)
@@ -12,6 +54,10 @@ let selection = { start: 0, end: 0 };
 let undoStack = [];
 const UNDO_LIMIT = 20;
 
+let canvas, ctx;
+let isSelecting = false;
+let selectionStartX = 0;
+
 /* ===============================
    INIT
 ================================ */
@@ -20,6 +66,53 @@ async function initAudioSystem() {
   if (!audioContext) {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
   }
+  
+  // Initialize canvas
+  canvas = document.getElementById('waveform');
+  ctx = canvas.getContext('2d');
+  
+  // Setup canvas events
+  canvas.addEventListener('mousedown', startSelection);
+  canvas.addEventListener('mousemove', updateSelection);
+  canvas.addEventListener('mouseup', endSelection);
+  
+  // Setup file input
+  document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+}
+
+/* ===============================
+   SELECTION SYSTEM
+================================ */
+
+function startSelection(e) {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  isSelecting = true;
+  selectionStartX = x;
+  
+  // Convert pixel to time
+  const duration = editedAudioBuffer ? editedAudioBuffer.duration : 0;
+  selection.start = (x / canvas.width) * duration;
+  selection.end = selection.start;
+}
+
+function updateSelection(e) {
+  if (!isSelecting) return;
+  
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  
+  const duration = editedAudioBuffer ? editedAudioBuffer.duration : 0;
+  const time = (x / canvas.width) * duration;
+  
+  selection.start = Math.min(time, selection.start);
+  selection.end = Math.max(time, selection.start);
+  
+  displayWaveform(editedAudioBuffer);
+}
+
+function endSelection() {
+  isSelecting = false;
 }
 
 /* ===============================
@@ -42,6 +135,7 @@ function undoLastEdit() {
 ================================ */
 
 function cloneBuffer(buffer) {
+  if (!buffer) return null;
   const b = audioContext.createBuffer(
     buffer.numberOfChannels,
     buffer.length,
@@ -170,6 +264,7 @@ function makeImpulse(ctx, amt) {
 ================================ */
 
 async function applySelectedEffects() {
+  if (!editedAudioBuffer) return alert("Load audio first");
   if (selection.start === selection.end) return alert("Select audio first");
 
   pushUndo();
@@ -201,7 +296,9 @@ async function applySelectedEffects() {
 ================================ */
 
 function deleteSelection() {
+  if (!editedAudioBuffer) return alert("Load audio first");
   if (selection.start === selection.end) return;
+  
   pushUndo();
 
   editedAudioBuffer = replaceSelection(
@@ -218,6 +315,9 @@ function deleteSelection() {
 }
 
 function fade(type) {
+  if (!editedAudioBuffer) return alert("Load audio first");
+  if (selection.start === selection.end) return;
+  
   pushUndo();
   const sr = editedAudioBuffer.sampleRate;
   const s = Math.floor(selection.start * sr);
@@ -249,6 +349,8 @@ function stopPlayback() {
 }
 
 function playAll() {
+  if (!editedAudioBuffer) return alert("Load audio first");
+  
   stopPlayback();
   playbackSource = audioContext.createBufferSource();
   playbackSource.buffer = editedAudioBuffer;
@@ -288,9 +390,78 @@ function audioBufferToWav(buffer) {
   return new Blob([ab], { type: "audio/wav" });
 }
 
+function exportWAV() {
+  if (!editedAudioBuffer) return alert("Load audio first");
+  
+  const blob = audioBufferToWav(editedAudioBuffer);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'edited_audio.wav';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 /* ===============================
-   LOAD FILE
+   WAVEFORM DISPLAY
 ================================ */
+
+function displayWaveform(buffer) {
+  if (!buffer) return;
+  
+  const width = canvas.width;
+  const height = canvas.height;
+  
+  ctx.clearRect(0, 0, width, height);
+  
+  const data = buffer.getChannelData(0);
+  const step = Math.ceil(data.length / width);
+  const amp = height / 2;
+  
+  ctx.fillStyle = '#f0f0f0';
+  ctx.fillRect(0, 0, width, height);
+  
+  ctx.beginPath();
+  ctx.moveTo(0, amp);
+  
+  for (let i = 0; i < width; i++) {
+    let min = 1.0;
+    let max = -1.0;
+    
+    for (let j = 0; j < step; j++) {
+      const datum = data[(i * step) + j];
+      if (datum < min) min = datum;
+      if (datum > max) max = datum;
+    }
+    
+    ctx.lineTo(i, (1 + min) * amp);
+    ctx.lineTo(i, (1 + max) * amp);
+  }
+  
+  ctx.strokeStyle = '#007bff';
+  ctx.stroke();
+  
+  // Draw selection
+  if (selection.start !== selection.end) {
+    const duration = buffer.duration;
+    const startX = (selection.start / duration) * width;
+    const endX = (selection.end / duration) * width;
+    
+    ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+    ctx.fillRect(startX, 0, endX - startX, height);
+  }
+}
+
+/* ===============================
+   FILE HANDLING
+================================ */
+
+async function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  await handleFileLoad(file);
+}
 
 async function handleFileLoad(file) {
   await initAudioSystem();
@@ -306,3 +477,5 @@ async function handleFileLoad(file) {
 
 window.addEventListener("load", initAudioSystem);
 </script>
+</body>
+</html>
