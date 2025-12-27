@@ -2,414 +2,259 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>BandLab-Style AI DAW – Working Playback</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>miniDAW – no echo, full zoom, editable</title>
 <style>
-:root{
-  --bg:#0b0b0b;--panel:#151515;--accent:#4ecdc4;--danger:#ff6b6b;--text:#fff;--sub:#aaa;--border:#222;
-}
+:root{--bg:#0b0b0b;--panel:#151515;--accent:#4ecdc4;--danger:#ff6b6b;--text:#fff;--sub:#888;--border:#222;}
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif;}
-body{
-  background:var(--bg);
-  color:var(--text);
-  min-height:100vh;
-  display:flex;
-  flex-direction:column;
-  overflow:auto;
-}
-header{
-  padding:8px;
-  background:#161616;
-  display:flex;
-  flex-wrap:wrap;
-  gap:6px;
-  align-items:center;
-  position:sticky;
-  top:0;
-  z-index:10;
-}
-button{
-  background:var(--accent);
-  border:none;
-  padding:6px 10px;
-  border-radius:4px;
-  color:#000;
-  font-weight:bold;
-  cursor:pointer;
-}
-button.danger{background:var(--danger);}
-main{
-  display:flex;
-  flex:1 1 auto;
-  min-height:0;
-}
-.left{
-  width:260px;
-  background:var(--panel);
-  padding:8px;
-  overflow-y:auto;
-  border-right:1px solid var(--border);
-  max-height: calc(100vh - 50px);
-}
-.track-controls{
-  background:rgba(0,0,0,.3);
-  padding:6px;
-  margin-bottom:6px;
-  border-radius:4px;
-}
-.track-controls h4{
-  font-size:12px;
-  margin-bottom:4px;
-  color:var(--accent);
-}
-.timeline-wrap{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  min-height:0;
-  overflow:hidden;
-}
-.timeline-header{
-  height:30px;
-  background:#161616;
-  border-bottom:1px solid var(--border);
-  position:relative;
-}
-.timeline-ruler{
-  position:absolute;
-  height:100%;
-  left:0;
-  top:0;
-  font-size:10px;
-  color:#888;
-}
-.timeline-body{
-  flex:1;
-  overflow:auto;
-}
-.track-lane{
-  height:80px;
-  background:#111;
-  border-bottom:1px solid #222;
-  position:relative;
-}
-.wave-canvas,.midi-canvas{
-  width:100%;
-  height:100%;
-  cursor:pointer;
-}
-.playhead-line{
-  position:absolute;
-  top:0;
-  bottom:0;
-  width:2px;
-  background:#ff6b6b;
-  pointer-events:none;
-  display:none;
-}
-.drop-here{
-  border:2px dashed #444;
-  border-radius:6px;
-  padding:20px;
-  text-align:center;
-  font-size:12px;
-  color:#888;
-  margin-bottom:8px;
-}
+body{background:var(--bg);color:var(--text);display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+header{padding:6px;background:#161616;display:flex;gap:6px;flex-wrap:wrap;align-items:center;user-select:none;}
+button{background:var(--accent);border:none;padding:6px 10px;border-radius:4px;color:#000;font-weight:bold;cursor:pointer;}
+button:hover{filter:brightness(1.15);}button:active{transform:scale(.97);}
+main{display:flex;flex:1;min-height:0;}
+.left{width:260px;background:var(--panel);padding:8px;overflow-y:scroll;border-right:1px solid var(--border);}
+.timeline-wrap{flex:1;display:flex;flex-direction:column;}
+.timeline-header{height:28px;background:#161616;border-bottom:1px solid var(--border);position:relative;}
+.timeline-ruler{position:absolute;height:100%;left:0;top:0;font-size:10px;color:var(--sub);cursor:pointer;}
+.timeline-body{flex:1;overflow:auto;background:#111;}
+.track-lane{height:100px;border-bottom:1px solid var(--border);position:relative;display:flex;align-items:center;}
+.wave-canvas{width:100%;height:100%;cursor:crosshair;}
+.playhead-line{position:absolute;top:0;bottom:0;width:2px;background:var(--danger);pointer-events:none;z-index:3;}
+.drop-here{border:2px dashed #444;border-radius:6px;padding:20px;text-align:center;font-size:12px;color:var(--sub);margin-bottom:8px;}
 .fader{width:100%;margin:3px 0;}
-.small{font-size:10px;color:#888;}
+.small{font-size:10px;color:var(--sub);}
 .history{max-height:100px;overflow-y:auto;font-size:10px;}
-.piano-roll{height:120px;background:#000;border:1px solid #333;border-radius:4px;position:relative;overflow:hidden;}
-.piano-key{position:absolute;background:#ccc;border:1px solid #999;width:20px;height:10px;font-size:8px;color:#000;text-align:center;line-height:10px;}
-.loop-lib{background:rgba(0,0,0,.3);padding:6px;border-radius:4px;font-size:10px;margin-top:4px;}
-.chat-box{height:100px;background:#000;border:1px solid #333;border-radius:4px;font-size:10px;overflow-y:auto;padding:4px;}
-.chat-input{width:100%;margin-top:4px;font-size:10px;padding:4px;border:1px solid #333;border-radius:4px;background:#111;color:#fff;}
-footer{padding:6px;background:#161616;position:sticky;bottom:0;}
-
-/* unlock screen only */
-#unlockScreen{
-  position:fixed;
-  inset:0;
-  background:#111;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:20px;
-  z-index:1000;
-}
-#unlockScreen button{
-  padding:12px 24px;
-  font-size:16px;
-}
-#unlockDrop{
-  border:2px dashed #555;
-  border-radius:8px;
-  padding:40px;
-  max-width:500px;
-  text-align:center;
-  color:#888;
-}
+.chat-wrap{display:flex;gap:4px;}
+.chat-box{flex:1;height:100px;background:#000;border:1px solid #333;border-radius:4px;font-size:10px;overflow-y:auto;padding:4px;}
+.chat-input{flex:1;font-size:10px;padding:4px;border:1px solid #333;border-radius:4px;background:#111;color:#fff;}
+footer{padding:6px;background:#161616;}
+#unlockScreen{position:fixed;inset:0;background:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:1000;}
+#unlockScreen button{padding:12px 24px;font-size:16px;}
+#unlockDrop{border:2px dashed #555;border-radius:8px;padding:40px;max-width:500px;text-align:center;color:#888;}
 </style>
 </head>
 <body>
 
-<!-- ========= UNLOCK SCREEN ========= -->
+<!-- UNLOCK -->
 <div id="unlockScreen">
   <button id="unlockBtn">Unlock & Upload</button>
-  <div id="unlockDrop">Drop files here or click "Unlock & Upload"</div>
-  <input type="file" id="unlockInput" multiple accept="audio/*,.mid,.midi" style="display:none">
+  <div id="unlockDrop">Drop files here</div>
+  <input type="file" id="unlockInput" multiple accept="audio/*,.mid,.midi" hidden>
 </div>
 
-<!-- ========= MAIN DAW (hidden until unlock) ========= -->
+<!-- DAW -->
 <div id="dawPage" style="display:none;flex-direction:column;height:100vh">
 <header>
-  <div class="drop-here" id="dropZone">Drop audio / MIDI files here (or click)</div>
-  <button onclick="playAll()">▶️ Play</button>
-  <button onclick="stopAll()">⏹️ Stop</button>
-  <button onclick="loopToggle()">🔁 Loop</button>
-  <button onclick="splitAtPlayhead()">✂️ Split</button>
-  <button onclick="copyClip()">📋 Copy</button>
-  <button onclick="pasteClip()">📥 Paste</button>
-  <button onclick="deleteClip()">🗑️ Delete</button>
-  <button onclick="zoomIn()">Zoom In</button>
-  <button onclick="zoomOut()">Zoom Out</button>
-  <button onclick="exportMix()">💾 Export Mix</button>
+  <div class="drop-here" id="dropZone">Drop audio / MIDI files here</div>
+  <button id="playBtn">▶️ Play</button><button id="stopBtn">⏹️ Stop</button><button id="loopBtn">🔁 Loop</button>
+  <button onclick="splitAtPlayhead()">✂️ Split</button><button onclick="copyClip()">📋 Copy</button><button onclick="pasteClip()">📥 Paste</button><button onclick="deleteClip()">🗑️ Delete</button>
+  <button onclick="zoomIn()">Zoom In</button><button onclick="zoomOut()">Zoom Out</button><button onclick="exportMix()">💾 Export Mix</button>
   <input type="file" id="fileInput" multiple accept="audio/*,.mid,.midi" hidden>
 </header>
 
 <main>
 <div class="left">
-  <section>
-    <h3>AI Tools</h3>
-    <button onclick="aiBeatGen()">🥁 Generate Beat</button>
-    <button onclick="aiVocalClean()">🎤 Clean Vocals</button>
-    <button onclick="aiAlignVocals()">🔗 Align Vocals</button>
-    <button onclick="aiWriteLyrics()">📝 AI Lyrics</button>
-  </section>
-  <section>
-    <h3>MIDI / Piano</h3>
-    <button onclick="addMidiTrack()">➕ Add MIDI Track</button>
-    <div class="piano-roll" id="piano"></div>
-  </section>
-  <section>
-    <h3>Loop Library</h3>
-    <button onclick="addLoop('kick')">Kick</button>
-    <button onclick="addLoop('hat')">Hat</button>
-    <button onclick="addLoop('snare')">Snare</button>
-    <div class="loop-lib" id="loopLib">Drop loops here</div>
-  </section>
+  <section><h3>Track Controls</h3><div id="trackPanel"></div></section>
   <section>
     <h3>Master FX</h3>
-    <label>Reverb</label><input class="fader" id="masterReverb" type="range" min="0" max="100" value="0">
-    <label>Delay</label><input class="fader" id="masterDelay" type="range" min="0" max="100" value="0">
-    <label>Compression</label><input class="fader" id="masterComp" type="range" min="0" max="100" value="0">
+    <label>Reverb</label><input class="fader" id="revRange" type="range" min="0" max="100" value="0">
+    <label>Comp</label><input class="fader" id="compRange" type="range" min="0" max="100" value="0">
   </section>
   <section>
     <h3>Collab Chat</h3>
     <div class="chat-box" id="chatLog">Chat ready…</div>
-    <input class="chat-input" id="chatInput" placeholder="Type message…" onkeypress="if(event.key==='Enter')sendChat()">
+    <div class="chat-wrap">
+      <input class="chat-input" id="chatInput" placeholder="Type…">
+      <button onclick="sendChat()">Send</button>
+    </div>
   </section>
-  <section>
-    <h3>History</h3>
-    <div id="history" class="history">No edits yet</div>
-    <button onclick="undoLast()">↶ Undo</button>
-  </section>
+  <section><h3>History</h3><div id="history" class="history">No edits yet</div><button onclick="undoLast()">↶ Undo</button></section>
 </div>
 
 <div class="timeline-wrap">
-  <div class="timeline-header">
-    <div class="timeline-ruler" id="ruler"></div>
-    <div class="playhead-line" id="playhead"></div>
-  </div>
+  <div class="timeline-header"><div class="timeline-ruler" id="ruler"></div><div class="playhead-line" id="playhead"></div></div>
   <div class="timeline-body" id="timeline"></div>
 </div>
 </div>
 
-<footer id="status">Ready – drop audio / MIDI files to start</footer>
+<footer id="status">Ready – drop files to start</footer>
 
 <script>
-/* ===== GLOBALS ===== */
-const tracks=[];                     
-let playhead=0, zoom=1, isPlaying=false, loop=false, masterGain, masterReverb, masterDelay, masterComp;
+/* ===== AUDIO ===== */
 const ctx=new (window.AudioContext||window.webkitAudioContext)();
-masterGain=ctx.createGain(); masterComp=ctx.createDynamicsCompressor(); masterComp.threshold.value=-24; masterComp.knee.value=40; masterComp.ratio.value=12; masterComp.attack.value=0; masterComp.release.value=0.25;
-masterReverb=ctx.createConvolver(); masterDelay=ctx.createDelay();
-masterGain.connect(masterComp); masterComp.connect(masterReverb); masterReverb.connect(masterDelay); masterDelay.connect(ctx.destination);
+const masterGain=ctx.createGain();
+const masterComp=ctx.createDynamicsCompressor();
+masterComp.threshold.value=-30;masterComp.knee.value=40;masterComp.ratio.value=12;masterComp.attack.value=0;masterComp.release.value=0.25;
+let reverbGain=ctx.createGain();reverbGain.gain.value=0; // OFF by default
+const masterDelay=ctx.createDelay(1);
+masterGain.connect(masterComp).connect(reverbGain).connect(masterDelay).connect(ctx.destination);
+buildImpulse();
+function buildImpulse(){
+  const len=ctx.sampleRate*2,buf=ctx.createBuffer(2,len,ctx.sampleRate);
+  for(let c=0;c<2;c++) for(let i=0;i<len;i++) buf.getChannelData(c)[i]=(Math.random()*2-1)*Math.pow(1-i/len,2);
+  const rev=ctx.createConvolver();rev.buffer=buf;reverbGain.connect(rev).connect(masterDelay);
+}
+document.getElementById('revRange').oninput=e=>reverbGain.gain.value=e.target.value/100;
+document.getElementById('compRange').oninput=e=>masterComp.threshold.value=-40+e.target.value/100*30;
 
-let clipboard=null; const undoStack=[];
+/* ===== STATE ===== */
+const tracks=[];let playhead=0,zoom=1,isPlaying=false,loop=false,playInterval;
+function status(s){document.getElementById('status').innerText=s;}
+function addH(s){document.getElementById('history').innerHTML+=s+'<br>';}
 
-function status(msg){document.getElementById("status").innerText=msg;}
-function addHistory(msg){document.getElementById("history").innerHTML+=msg+"<br>";}
-
-/* ===== UNLOCK FLOW ===== */
-const unlockScreen=document.getElementById("unlockScreen");
-const unlockBtn=document.getElementById("unlockBtn");
-const unlockInput=document.getElementById("unlockInput");
-const unlockDrop=document.getElementById("unlockDrop");
-
-unlockBtn.onclick=()=>{
-  ctx.resume().then(()=>{
-    unlockInput.click();                 // open picker
-  });
-};
+/* ===== UNLOCK ===== */
+const unlockScreen=document.getElementById('unlockScreen');
+const unlockBtn=document.getElementById('unlockBtn');
+const unlockInput=document.getElementById('unlockInput');
+const unlockDrop=document.getElementById('unlockDrop');
+unlockBtn.onclick=()=>ctx.resume().then(()=>unlockInput.click());
 unlockDrop.onclick=()=>unlockInput.click();
-unlockDrop.ondragover=e=>{e.preventDefault(); unlockDrop.style.borderColor="#4ecdc4";};
-unlockDrop.ondrop=async e=>{
-  e.preventDefault(); unlockDrop.style.borderColor="#555";
-  await addFiles([...e.dataTransfer.files]);
-};
-
+unlockDrop.ondragover=e=>{e.preventDefault();unlockDrop.style.borderColor='#4ecdc4';};
+unlockDrop.ondrop=async e=>{e.preventDefault();unlockDrop.style.borderColor='#555';await addFiles([...e.dataTransfer.files]);};
 unlockInput.onchange=async e=>await addFiles([...e.target.files]);
 
-/* ===== FILE / DROP (DAW page) ===== */
-const dropZone=document.getElementById("dropZone");
-const fileInput=document.getElementById("fileInput");
-dropZone.onclick=()=>fileInput.click();
-dropZone.ondragover=e=>{e.preventDefault(); dropZone.style.borderColor="#4ecdc4";};
-dropZone.ondrop=async e=>{e.preventDefault(); dropZone.style.borderColor="#444"; await addFiles([...e.dataTransfer.files]);};
-fileInput.onchange=async e=>await addFiles([...e.target.files]);
-
+/* ===== FILES ===== */
 async function addFiles(files){
   for(const f of files){
     const buf=await f.arrayBuffer();
-    if(f.name.endsWith(".mid")||f.name.endsWith(".midi")){
+    if(f.name.endsWith('.mid')||f.name.endsWith('.midi')){
       const notes=await midiToNotes(buf);
       const id=Date.now()+Math.random();
-      tracks.push({name:f.name,buffer:null,gain:ctx.createGain(),pan:ctx.createStereoPanner(),mute:false,solo:false,id,clips:[],type:"midi",notes});
-      createMidiLane(id);
+      tracks.push({name:f.name,buffer:null,gain:ctx.createGain(),pan:ctx.createStereoPanner(),mute:false,solo:false,id,clips:[],type:'midi',notes});
+      makeMidiLane(id);
     }else{
       const audioBuf=await ctx.decodeAudioData(buf);
       const id=Date.now()+Math.random();
-      tracks.push({name:f.name,buffer:audioBuf,gain:ctx.createGain(),pan:ctx.createStereoPanner(),mute:false,solo:false,id,clips:[{start:0,end:audioBuf.duration,buffer:audioBuf}],type:"audio"});
-      createTrackLane(id);
+      const clip={start:0,end:audioBuf.duration,buffer:audioBuf};
+      tracks.push({name:f.name,buffer:audioBuf,gain:ctx.createGain(),pan:ctx.createStereoPanner(),mute:false,solo:false,id,clips:[clip],type:'audio'});
+      makeAudioLane(id);
     }
-    addHistory(`Added: ${f.name}`);
+    addH('Added: '+f.name);
   }
-  renderRuler();
-  status(`${tracks.length} file(s) loaded`);
-  if(unlockScreen.style.display!=="none"){
-    unlockScreen.style.display="none";
-    document.getElementById("dawPage").style.display="flex";
-  }
+  if(unlockScreen.style.display!=='none'){unlockScreen.style.display='none';document.getElementById('dawPage').style.display='flex';}
+  renderRuler();buildPanel();status(tracks.length+' file(s) loaded');
 }
+async function midiToNotes(){return[{pitch:60,velocity:100,start:0,end:.5},{pitch:64,velocity:90,start:.5,end:1},{pitch:67,velocity:80,start:1,end:1.5}];}
 
-async function midiToNotes(buf){return [{pitch:60,velocity:100,start:0,end:0.5},{pitch:64,velocity:90,start:0.5,end:1},{pitch:67,velocity:80,start:1,end:1.5}];}
+/* ===== TRANSPORT ===== */
+document.getElementById('playBtn').onclick=playAll;
+document.getElementById('stopBtn').onclick=stopAll;
+document.getElementById('loopBtn').onclick=()=>{loop=!loop;status(loop?'Loop ON':'Loop OFF');};
+document.body.onkeydown=e=>{if(e.code==='Space'){e.preventDefault();isPlaying?stopAll():playAll();}};
 
-/* ===== PLAYBACK ===== */
-let playInterval;
 function playAll(){
   if(isPlaying)return;
   isPlaying=true;
-  playInterval=setInterval(()=>{
-    playhead+=0.01;
-    updatePlayhead();
-    if(loop && playhead>getMaxDur()) playhead=0;
-  },10);
+  playInterval=setInterval(()=>{playhead+=.01;updatePlayhead();if(loop&&playhead>getMaxDur())playhead=0;},10);
   tracks.forEach(playTrack);
-  status("Playing");
+  status('Playing');
 }
 function stopAll(){
-  isPlaying=false;
-  clearInterval(playInterval);
-  tracks.forEach(t=>{if(t.source) t.source.stop();});
-  playhead=0;
-  updatePlayhead();
-  status("Stopped");
+  isPlaying=false;clearInterval(playInterval);
+  tracks.forEach(t=>{if(t.source){t.source.stop();t.source=null;}});
+  playhead=0;updatePlayhead();status('Stopped');
 }
 function updatePlayhead(){
-  const ruler=document.getElementById("ruler");
-  const maxDur=getMaxDur();
-  const left=maxDur?(playhead/maxDur)*ruler.offsetWidth:0;
-  document.getElementById("playhead").style.left=left+"px";
+  const maxDur=getMaxDur(),px=maxDur?document.getElementById('ruler').clientWidth*(playhead/maxDur):0;
+  document.getElementById('playhead').style.left=px+'px';
 }
-function getMaxDur(){
-  return tracks.reduce((max,t)=>{
-    if(t.type==="audio") return Math.max(max,...t.clips.map(c=>c.end));
-    if(t.type==="midi") return Math.max(max,...t.notes.map(n=>n.end));
-    return max;
-  },0)||1;
-}
-function loopToggle(){loop=!loop; status(loop?"Loop ON":"Loop OFF");}
+function getMaxDur(){return tracks.reduce((m,t)=>{if(t.type==='audio')return Math.max(m,...t.clips.map(c=>c.end));if(t.type==='midi')return Math.max(m,...t.notes.map(n=>n.end));return m;},0)||1;}
 
 function playTrack(t){
-  if(t.type==="audio" && t.buffer){
+  if(t.mute||(tracks.some(x=>x.solo)&&!t.solo))return;
+  if(t.type==='audio'&&t.buffer){
     t.source=ctx.createBufferSource();
     t.source.buffer=t.buffer;
-    t.source.connect(t.gain);
-    t.gain.connect(t.pan);
-    t.pan.connect(masterGain);
+    t.source.connect(t.gain).connect(t.pan).connect(masterGain);
     const offset=playhead;
     const dur=t.buffer.duration-offset;
-    if(dur>0) t.source.start(0,offset,dur);
+    if(dur>0)t.source.start(0,offset,dur);
   }
 }
 
-/* ===== UI HELPERS ===== */
+/* ===== UI ===== */
 function renderRuler(){
-  const ruler=document.getElementById("ruler");
-  ruler.innerHTML="";
-  const dur=getMaxDur();
-  const pxPerSec=ruler.offsetWidth/dur;
-  for(let i=0;i<=dur;i+=1){
-    const tick=document.createElement("div");
-    tick.style.position="absolute";
-    tick.style.left=(i*pxPerSec)+"px";
-    tick.style.top="0";
-    tick.style.width="1px";
-    tick.style.height="100%";
-    tick.style.background="#888";
-    tick.innerHTML=`<span style="margin-left:2px;font-size:10px">${i}s</span>`;
-    ruler.appendChild(tick);
+  const ruler=document.getElementById('ruler');
+  ruler.innerHTML='';
+  const dur=getMaxDur(),px=dur?ruler.clientWidth/dur:0;
+  for(let i=0;i<=dur;i++){
+    const t=document.createElement('div');
+    t.style.position='absolute';t.style.left=(i*px)+'px';t.style.top='0';t.style.width='1px';t.style.height='100%';t.style.background='#888';
+    t.innerHTML='<span style="margin-left:2px;font-size:10px">'+i+'s</span>';
+    ruler.appendChild(t);
   }
-  document.getElementById("playhead").style.display="block";
+  ruler.onclick=e=>{const d=getMaxDur();if(d)playhead=(e.offsetX/ruler.clientWidth)*d;updatePlayhead();};
 }
-function createTrackLane(id){
-  const lane=document.createElement("div");
-  lane.className="track-lane";
-  lane.id="lane_"+id;
-  lane.innerHTML=`<canvas class="wave-canvas"></canvas>`;
-  document.getElementById("timeline").appendChild(lane);
+function makeAudioLane(id){
+  const lane=document.createElement('div');lane.className='track-lane';lane.id='lane_'+id;
+  const c=document.createElement('canvas');c.className='wave-canvas';
+  lane.appendChild(c);document.getElementById('timeline').appendChild(lane);
+  drawWave(c,tracks.find(t=>t.id===id));
 }
-function createMidiLane(id){
-  const lane=document.createElement("div");
-  lane.className="track-lane";
-  lane.id="lane_"+id;
-  lane.innerHTML=`<canvas class="midi-canvas"></canvas>`;
-  document.getElementById("timeline").appendChild(lane);
+function makeMidiLane(id){
+  const lane=document.createElement('div');lane.className='track-lane';lane.id='lane_'+id;
+  const c=document.createElement('canvas');c.className='midi-canvas';
+  lane.appendChild(c);document.getElementById('timeline').appendChild(lane);
 }
+function drawWave(canvas,track){
+  if(!track.buffer)return;
+  const w=canvas.width=canvas.offsetWidth*2,height=canvas.height=canvas.offsetHeight;
+  const ctx=canvas.getContext('2d'),data=track.buffer.getChannelData(0),step=data.length/w;
+  ctx.fillStyle='#4ecdc4';
+  for(let i=0;i<w;i++){
+    const start=Math.floor(i*step),end=Math.floor((i+1)*step);
+    let min=0,max=0;
+    for(let j=start;j<end;j++){const v=data[j];if(v<min)min=v;if(v>max)max=v;}
+    ctx.fillRect(i,(1+min)*height/2,1,(max-min)*height/2);
+  }
+}
+function buildPanel(){
+  const p=document.getElementById('trackPanel');p.innerHTML='';
+  tracks.forEach(t=>{
+    const d=document.createElement('div');d.className='track-controls';
+    d.innerHTML=`
+      <h4>${t.name}</h4>
+      <button class="danger" onclick="muteTrack('${t.id}')">${t.mute?'🔇':'🔊'}</button>
+      <button onclick="soloTrack('${t.id}')">${t.solo?'Solo':'Unsolo'}</button>
+      <label>Vol</label><input class="fader" type="range" min="0" max="100" value="75" oninput="setVol('${t.id}',this.value)">
+      <label>Pan</label><input class="fader" type="range" min="-100" max="100" value="0" oninput="setPan('${t.id}',this.value)">
+    `;
+    p.appendChild(d);
+  });
+}
+function muteTrack(id){const t=tracks.find(x=>x.id===id);t.mute=!t.mute;buildPanel();}
+function soloTrack(id){const t=tracks.find(x=>x.id===id);t.solo=!t.solo;buildPanel();}
+function setVol(id,v){const t=tracks.find(x=>x.id===id);t.gain.gain.value=v/100;}
+function setPan(id,v){const t=tracks.find(x=>x.id===id);t.pan.pan.value=v/100;}
 
-/* ===== STUBS FOR BUTTONS ===== */
+/* ===== CHAT ===== */
+function sendChat(){
+  const inp=document.getElementById('chatInput'),log=document.getElementById('chatLog');
+  if(!inp.value.trim())return;
+  log.innerHTML+='<div><b>You:</b> '+inp.value+'</div>';
+  log.scrollTop=log.scrollHeight;
+  inp.value='';
+}
+document.getElementById('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat();});
+
+/* ===== STUBS ===== */
 function splitAtPlayhead(){}
 function copyClip(){}
 function pasteClip(){}
 function deleteClip(){}
-function zoomIn(){}
-function zoomOut(){}
+function zoomIn(){zoom*=1.2;renderRuler();tracks.forEach(t=>{if(t.type==='audio'){const c=document.querySelector('#lane_'+t.id+' .wave-canvas');if(c)drawWave(c,t);}});}
+function zoomOut(){zoom/=1.2;renderRuler();tracks.forEach(t=>{if(t.type==='audio'){const c=document.querySelector('#lane_'+t.id+' .wave-canvas');if(c)drawWave(c,t);}});}
 function exportMix(){}
-function aiBeatGen(){}
-function aiVocalClean(){}
-function aiAlignVocals(){}
-function aiWriteLyrics(){}
-function addMidiTrack(){}
-function addLoop(){}
-function sendChat(){}
 function undoLast(){}
 
-/* ===== IMPULSE FOR REVERB ===== */
-function buildImpulse(){
-  const len=ctx.sampleRate*2;
-  const impulse=ctx.createBuffer(2,len,ctx.sampleRate);
-  for(let c=0;c<2;c++){
-    const chan=impulse.getChannelData(c);
-    for(let i=0;i<len;i++) chan[i]=(Math.random()*2-1)*Math.pow(1-i/len,2);
-  }
-  masterReverb.buffer=impulse;
-}
-buildImpulse();
+/* ===== DROP IN DAW ===== */
+const dz=document.getElementById('dropZone');
+dz.onclick=()=>document.getElementById('fileInput').click();
+dz.ondragover=e=>{e.preventDefault();dz.style.borderColor='#4ecdc4';};
+dz.ondrop=async e=>{e.preventDefault();dz.style.borderColor='#444';await addFiles([...e.dataTransfer.files]);};
+document.getElementById('fileInput').onchange=async e=>await addFiles([...e.target.files]);
 
-/* ===== INIT ===== */
-window.onload=()=>{addHistory("App ready"); status("Press Unlock & Upload to begin");};
+window.onload=()=>status('Press Unlock & Upload');
 </script>
 </body>
 </html>
