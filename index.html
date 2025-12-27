@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal DAW - Complete Music Production Studio</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Main Layout */
+        .daw-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: #1a1a1a;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff6b6b;
+        }
+
+        .transport-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .transport-btn {
+            background: #333;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .transport-btn:hover {
+            background: #555;
+        }
+
+        .transport-btn.active {
+            background: #ff6b6b;
+        }
+
+        /* Main Content */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: #151515;
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-section {
+            padding: 20px;
+            border-bottom: 1px solid #333;
+        }
+
+        .sidebar-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #888;
+        }
+
+        .track-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .control-btn {
+            background: #222;
+            border: 1px solid #444;
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: #333;
+            border-color: #666;
+        }
+
+        /* Track Area */
+        .track-area {
+            flex: 1;
+            background: #0f0f0f;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .track-header {
+            background: #1a1a1a;
+            padding: 15px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .track-controls-main {
+            display: flex;
+            gap: 15px;
+        }
+
+        .add-track-btn {
+            background: #ff6b6b;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .tracks-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .track {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .track-info {
+            min-width: 200px;
+        }
+
+        .track-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .track-controls-track {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .track-btn {
+            background: #333;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .track-btn:hover {
+            background: #555;
+        }
+
+        .track-waveform {
+            flex: 1;
+            height: 60px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .waveform-visual {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b 0%, #4ecdc4 50%, #45b7d1 100%);
+            opacity: 0.3;
+        }
+
+        /* Editor Panel */
+        .editor-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 300px;
+            background: #151515;
+            border-top: 1px solid #333;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .editor-panel.open {
+            transform: translateY(0);
+        }
+
+        .editor-header {
+            padding: 15px;
+            background: #1a1a1a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .editor-content {
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .editor-section {
+            flex: 1;
+        }
+
+        /* Tutorial Modal */
+        .tutorial-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .tutorial-modal.active {
+            display: flex;
+        }
+
+        .tutorial-content {
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .tutorial-title {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #ff6b6b;
+        }
+
+        .tutorial-section {
+            margin-bottom: 20px;
+        }
+
+        .tutorial-section h3 {
+            color: #4ecdc4;
+            margin-bottom: 10px;
+        }
+
+        .close-tutorial {
+            background: #ff6b6b;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        /* Beat Maker */
+        .beat-maker {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            z-index: 999;
+        }
+
+        .beat-maker.active {
+            display: block;
+        }
+
+        .beat-pads {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .beat-pad {
+            width: 80px;
+            height: 80px;
+            background: #333;
+            border: 2px solid #555;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+
+        .beat-pad:hover {
+            background: #444;
+            border-color: #777;
+        }
+
+        .beat-pad.active {
+            background: #ff6b6b;
+            border-color: #ff6b6b;
+            transform: scale(0.95);
+        }
+
+        /* Effects Panel */
+        .effects-panel {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .effect-control {
+            margin-bottom: 15px;
+        }
+
+        .effect-label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .effect-slider {
+            width: 100%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .effect-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #ff6b6b;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        /* Recording Indicator */
+        .recording-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #ff3333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            display: none;
+            animation: pulse 1s infinite;
+        }
+
+        .recording-indicator.active {
+            display: block;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 200px;
+            }
+            
+            .track-info {
+                min-width: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="daw-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">🎵 Universal DAW</div>
+            <div class="transport-controls">
+                <button class="transport-btn" id="playBtn">▶️ Play</button>
+                <button class="transport-btn" id="stopBtn">⏹️ Stop</button>
+                <button class="transport-btn" id="recordBtn">🔴 Record</button>
+                <button class="transport-btn" id="loopBtn">🔁 Loop</button>
+                <button class="transport-btn" id="tutorialBtn">📚 Tutorial</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-section">
+                    <div class="sidebar-title">TRACK CONTROLS</div>
+                    <div class="track-controls">
+                        <button class="control-btn" id="addTrackBtn">➕ Add Track</button>
+                        <button class="control-btn" id="importAudioBtn">📁 Import Audio</button>
+                        <button class="control-btn" id="beatMakerBtn">🥁 Beat Maker</button>
+                        <button class="control-btn" id="vocalEffectsBtn">🎤 Vocal Effects</button>
+                    </div>
+                </div>
+                
+                <div class="sidebar-section">
+                    <div class="sidebar-title">EDITING TOOLS</div>
+                    <div class="track-controls">
+                        <button class="control-btn" id="splitToolBtn">✂️ Split Tool</button>
+                        <button class="control-btn" id="copyToolBtn">📋 Copy</button>
+                        <button class="control-btn" id="pasteToolBtn">📌 Paste</button>
+                        <button class="control-btn" id="deleteToolBtn">🗑️ Delete</button>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">MASTERING</div>
+                    <div class="effects-panel">
+                        <div class="effect-control">
+                            <label class="effect-label">Volume</label>
+                            <input type="range" class="effect-slider" min="0" max="100" value="75">
+                        </div>
+                        <div class="effect-control">
+                            <label class="effect-label">Bass</label>
+                            <input type="range" class="effect-slider" min="0" max="100" value="50">
+                        </div>
+                        <div class="effect-control">
+                            <label class="effect-label">Treble</label>
+                            <input type="range" class="effect-slider" min="0" max="100" value="50">
+                        </div>
+                        <div class="effect-control">
+                            <label class="effect-label">Reverb</label>
+                            <input type="range" class="effect-slider" min="0" max="100" value="25">
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Track Area -->
+            <main class="track-area">
+                <div class="track-header">
+                    <div class="track-controls-main">
+                        <button class="add-track-btn" id="mainAddTrackBtn">+ Add New Track</button>
+                        <button class="transport-btn" id="editorBtn">🎛️ Open Editor</button>
+                    </div>
+                    <div class="timeline-info">
+                        <span>Timeline: 00:00 / 03:45</span>
+                    </div>
+                </div>
+                
+                <div class="tracks-container" id="tracksContainer">
+                    <!-- Tracks will be dynamically added here -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Editor Panel -->
+    <div class="editor-panel" id="editorPanel">
+        <div class="editor-header">
+            <h3>Audio Editor</h3>
+            <button class="transport-btn" id="closeEditorBtn">✕ Close</button>
+        </div>
+        <div class="editor-content">
+            <div class="editor-section">
+                <h4>Waveform Editor</h4>
+                <div class="track-waveform" style="height: 100px;">
+                    <div class="waveform-visual"></div>
+                </div>
+            </div>
+            <div class="editor-section">
+                <h4>Effects Chain</h4>
+                <div class="effects-panel">
+                    <button class="control-btn">Add Compressor</button>
+                    <button class="control-btn">Add EQ</button>
+                    <button class="control-btn">Add Reverb</button>
+                    <button class="control-btn">Add Delay</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Beat Maker -->
+    <div class="beat-maker" id="beatMaker">
+        <h3>🥁 Beat Maker</h3>
+        <div class="beat-pads">
+            <div class="beat-pad" data-sound="kick">Kick</div>
+            <div class="beat-pad" data-sound="snare">Snare</div>
+            <div class="beat-pad" data-sound="hihat">Hi-Hat</div>
+            <div class="beat-pad" data-sound="clap">Clap</div>
+            <div class="beat-pad" data-sound="tom">Tom</div>
+            <div class="beat-pad" data-sound="crash">Crash</div>
+            <div class="beat-pad" data-sound="ride">Ride</div>
+            <div class="beat-pad" data-sound="openhat">Open Hat</div>
+        </div>
+        <button class="transport-btn" id="closeBeatMakerBtn" style="margin-top: 20px;">Close Beat Maker</button>
+    </div>
+
+    <!-- Tutorial Modal -->
+    <div class="tutorial-modal" id="tutorialModal">
+        <div class="tutorial-content">
+            <h2 class="tutorial-title">🎵 Universal DAW - Complete Tutorial</h2>
+            
+            <div class="tutorial-section">
+                <h3>🚀 Getting Started</h3>
+                <p>Welcome to Universal DAW! This tutorial will guide you through all the features of this comprehensive music production tool.</p>
+                <ul>
+                    <li><strong>Add Tracks:</strong> Click "Add Track" to create new audio or MIDI tracks</li>
+                    <li><strong>Import Audio:</strong> Use "Import Audio" to bring in your existing files</li>
+                    <li><strong>Recording:</strong> Click the red record button and select a track to start recording</li>
+                </ul>
+            </div>
+
+            <div class="tutorial-section">
+                <h3>🎤 Recording & Editing Vocals</h3>
+                <ul>
+                    <li><strong>Setup:</strong> Click "Add Track" → Select "Audio Track" → Choose microphone input</li>
+                    <li><strong>Record:</strong> Click 🔴 Record button → Speak/sing into microphone</li>
+                    <li><strong>Edit:</strong> Double-click track to open editor → Use split tool (✂️) to cut sections</li>
+                    <li><strong>Effects:</strong> Click "Vocal Effects" → Apply compression, EQ, reverb</li>
+                    <li><strong>Clean Up:</strong> Use noise reduction, de-esser, and pitch correction tools</li>
+                </ul>
+            </div>
+
+            <div class="tutorial-section">
+                <h3>🥁 Creating Beats</h3>
+                <ul>
+                    <li><strong>Beat Maker:</strong> Click "Beat Maker" button → Use drum pads to create patterns</li>
+                    <li><strong>Pattern Creation:</strong> Click pads to trigger drums → Record your patterns</li>
+                    <li><strong>Sequencer:</strong> Each pad represents a different drum sound (Kick, Snare, Hi-Hat, etc.)</li>
+                    <li><strong>Quantization:</strong> Automatically align your beats to the grid for perfect timing</li>
+                </ul>
+            </div>
+
+            <div class="tutorial-section">
+                <h3>✂️ Track Editing</h3>
+                <ul>
+                    <li><strong>Split Tool:</strong> Click where you want to split → Press "Split Tool" or Ctrl+T</li>
+                    <li><strong>Copy/Paste:</strong> Select region → Use copy/paste buttons or Ctrl+C/Ctrl+V</li>
+                    <li><strong>Trim:</strong> Hover over edges → Drag to trim beginning/end</li>
+                    <li><strong>Fade:</strong> Drag from corners to create fade in/out effects</li>
+                </ul>
+            </div>
+
+            <div class="tutorial-section">
+                <h3>🎛️ Mixing & Effects</h3>
+                <ul>
+                    <li><strong>Volume Control:</strong> Use track volume sliders in the sidebar</li>
+                    <li><strong>EQ:</strong> Click "Open Editor" → Add EQ effect → Adjust frequencies</li>
+                    <li><strong>Compression:</strong> Add compressor to control dynamics</li>
+                    <li><strong>Reverb/Delay:</strong> Add space and depth to your tracks</li>
+                    <li><strong>Mastering:</strong> Use the mastering section in sidebar for final polish</li>
+                </ul>
+            </div>
+
+            <div class="tutorial-section">
+                <h3>⌨️ Keyboard Shortcuts</h3>
+                <ul>
+                    <li><strong>Space:</strong> Play/Stop</li>
+                    <li><strong>Ctrl+T:</strong> Split at playhead</li>
+                    <li><strong>Ctrl+C:</strong> Copy selection</li>
+                    <li><strong>Ctrl+V:</strong> Paste</li>
+                    <li><strong>Ctrl+Z:</strong> Undo</li>
+                    <li><strong>Ctrl+Y:</strong> Redo</li>
+                </ul>
+            </div>
+
+            <div class="tutorial-section">
+                <h3>💡 Pro Tips</h3>
+                <ul>
+                    <li>Use headphones for better recording quality</li>
+                    <li>Save your project frequently (Ctrl+S)</li>
+                    <li>Experiment with different effects combinations</li>
+                    <li>Use the loop function to practice difficult sections</li>
+                    <li>Layer multiple tracks for richer sound</li>
+                </ul>
+            </div>
+
+            <button class="close-tutorial" id="closeTutorialBtn">Got it! Let's make music 🎵</button>
+        </div>
+    </div>
+
+    <!-- Recording Indicator -->
+    <div class="recording-indicator" id="recordingIndicator">
+        🔴 RECORDING...
+    </div>
+
+    <script>
+        // Global variables
+        let isPlaying = false;
+        let isRecording = false;
+        let trackCount = 0;
+        let audioContext;
+        let mediaRecorder;
+        let recordedChunks = [];
+
+        // Initialize audio context
+        function initAudioContext() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        // Add track functionality
+        function addTrack(type = 'audio') {
+            trackCount++;
+            const tracksContainer = document.getElementById('tracksContainer');
+            
+            const trackDiv = document.createElement('div');
+            trackDiv.className = 'track';
+            trackDiv.innerHTML = `
+                <div class="track-info">
+                    <div class="track-name">Track ${trackCount} (${type})</div>
+                    <div class="track-controls-track">
+                        <button class="track-btn" onclick="toggleMute(this)">🔇 Mute</button>
+                        <button class="track-btn" onclick="toggleSolo(this)">🎵 Solo</button>
+                        <button class="track-btn" onclick="recordTrack(this)">🔴 Record</button>
+                        <button class="track-btn" onclick="openEditor(this)">✏️ Edit</button>
+                    </div>
+                </div>
+                <div class="track-waveform">
+                    <div class="waveform-visual"></div>
+                </div>
+            `;
+            
+            tracksContainer.appendChild(trackDiv);
+        }
+
+        // Transport controls
+        document.getElementById('playBtn').addEventListener('click', function() {
+            isPlaying = !isPlaying;
+            this.textContent = isPlaying ? '⏸️ Pause' : '▶️ Play';
+            this.classList.toggle('active', isPlaying);
+        });
+
+        document.getElementById('stopBtn').addEventListener('click', function() {
+            isPlaying = false;
+            document.getElementById('playBtn').textContent = '▶️ Play';
+            document.getElementById('playBtn').classList.remove('active');
+        });
+
+        document.getElementById('recordBtn').addEventListener('click', function() {
+            isRecording = !isRecording;
+            this.classList.toggle('active', isRecording);
+            document.getElementById('recordingIndicator').classList.toggle('active', isRecording);
+            
+            if (isRecording) {
+                startRecording();
+            } else {
+                stopRecording();
+            }
+        });
+
+        // Recording functionality
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                recordedChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'audio/wav' });
+                    const url = URL.createObjectURL(blob);
+                    addRecordedTrack(url);
+                };
+
+                mediaRecorder.start();
+            } catch (err) {
+                console.error('Recording failed:', err);
+                alert('Recording failed. Please ensure microphone access is allowed.');
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            }
+        }
+
+        function addRecordedTrack(audioUrl) {
+            trackCount++;
+            const tracksContainer = document.getElementById('tracksContainer');
+            
+            const trackDiv = document.createElement('div');
+            trackDiv.className = 'track';
+            trackDiv.innerHTML = `
+                <div class="track-info">
+                    <div class="track-name">Recording ${trackCount}</div>
+                    <div class="track-controls-track">
+                        <button class="track-btn" onclick="toggleMute(this)">🔇 Mute</button>
+                        <button class="track-btn" onclick="toggleSolo(this)">🎵 Solo</button>
+                        <button class="track-btn" onclick="playAudio('${audioUrl}')">▶️ Play</button>
+                        <button class="track-btn" onclick="openEditor(this)">✏️ Edit</button>
+                    </div>
+                </div>
+                <div class="track-waveform">
+                    <div class="waveform-visual" style="background: linear-gradient(90deg, #4ecdc4 0%, #45b7d1 100%);"></div>
+                </div>
+            `;
+            
+            tracksContainer.appendChild(trackDiv);
+        }
+
+        // Track controls
+        function toggleMute(button) {
+            button.classList.toggle('active');
+            button.textContent = button.classList.contains('active') ? '🔊 Unmute' : '🔇 Mute';
+        }
+
+        function toggleSolo(button) {
+            button.classList.toggle('active');
+            button.textContent = button.classList.contains('active') ? '🔇 Unsolo' : '🎵 Solo';
+        }
+
+        function recordTrack(button) {
+            document.getElementById('recordBtn').click();
+        }
+
+        function openEditor(button) {
+            document.getElementById('editorPanel').classList.add('open');
+        }
+
+        // Beat maker
+        document.getElementById('beatMakerBtn').addEventListener('click', function() {
+            document.getElementById('beatMaker').classList.add('active');
+        });
+
+        document.getElementById('closeBeatMakerBtn').addEventListener('click', function() {
+            document.getElementById('beatMaker').classList.remove('active');
+        });
+
+        // Beat pads
+        document.querySelectorAll('.beat-pad').forEach(pad => {
+            pad.addEventListener('click', function() {
+                this.classList.add('active');
+                setTimeout(() => this.classList.remove('active'), 200);
+                
+                // Simulate drum sound
+                playDrumSound(this.dataset.sound);
+            });
+        });
+
+        function playDrumSound(sound) {
+            if (!audioContext) initAudioContext();
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Different frequencies for different drums
+            const frequencies = {
+                kick: 60,
+                snare: 200,
+                hihat: 800,
+                clap: 300,
+                tom: 150,
+                crash: 400,
+                ride: 600,
+                openhat: 1000
+            };
+            
+            oscillator.frequency.setValueAtTime(frequencies[sound] || 200, audioContext.currentTime);
+            oscillator.type = 'sawtooth';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+
+        // Tutorial modal
+        document.getElementById('tutorialBtn').addEventListener('click', function() {
+            document.getElementById('tutorialModal').classList.add('active');
+        });
+
+        document.getElementById('closeTutorialBtn').addEventListener('click', function() {
+            document.getElementById('tutorialModal').classList.remove('active');
+        });
+
+        // Editor panel
+        document.getElementById('editorBtn').addEventListener('click', function() {
+            document.getElementById('editorPanel').classList.add('open');
+        });
+
+        document.getElementById('closeEditorBtn').addEventListener('click', function() {
+            document.getElementById('editorPanel').classList.remove('open');
+        });
+
+        // Add track buttons
+        document.getElementById('addTrackBtn').addEventListener('click', function() {
+            addTrack('audio');
+        });
+
+        document.getElementById('mainAddTrackBtn').addEventListener('click', function() {
+            addTrack('audio');
+        });
+
+        // Import audio (simulated)
+        document.getElementById('importAudioBtn').addEventListener('click', function() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'audio/*';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    addTrack('imported');
+                    alert(`Imported: ${file.name}`);
+                }
+            };
+            input.click();
+        });
+
+        // Vocal effects
+        document.getElementById('vocalEffectsBtn').addEventListener('click', function() {
+            alert('Vocal Effects Panel:\n\n• Noise Reduction\n• De-esser\n• Compression\n• EQ\n• Reverb\n• Pitch Correction\n\nApply these effects to clean up and enhance your vocal recordings!');
+        });
+
+        // Editing tools
+        document.getElementById('splitToolBtn').addEventListener('click', function() {
+            alert('Split Tool: Click on any track to split it at the playhead position. Use this to separate sections of your audio.');
+        });
+
+        document.getElementById('copyToolBtn').addEventListener('click', function() {
+            alert('Copy Tool: Select a region and click this to copy it to the clipboard.');
+        });
+
+        document.getElementById('pasteToolBtn').addEventListener('click', function() {
+            alert('Paste Tool: Click this to paste copied audio at the playhead position.');
+        });
+
+        document.getElementById('deleteToolBtn').addEventListener('click', function() {
+            alert('Delete Tool: Select a region and click this to remove it from your project.');
+        });
+
+        // Initialize with one track
+        window.addEventListener('load', function() {
+            addTrack('audio');
+            initAudioContext();
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                document.getElementById('playBtn').click();
+            } else if (e.ctrlKey && e.key === 't') {
+                e.preventDefault();
+                document.getElementById('splitToolBtn').click();
+            } else if (e.ctrlKey && e.key === 'c') {
+                e.preventDefault();
+                document.getElementById('copyToolBtn').click();
+            } else if (e.ctrlKey && e.key === 'v') {
+                e.preventDefault();
+                document.getElementById('pasteToolBtn').click();
+            } else if (e.ctrlKey && e.key === 'z') {
+                e.preventDefault();
+                alert('Undo last action');
+            }
+        });
+
+        // Simulate audio playback
+        function playAudio(url) {
+            if (!audioContext) initAudioContext();
+            
+            const audio = new Audio(url);
+            audio.play().catch(err => {
+                console.log('Audio playback failed:', err);
+                alert('Audio playback not available in this demo. In a real implementation, this would play your recorded audio.');
+            });
+        }
+    </script>
+</body>
+</html>
