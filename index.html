@@ -909,17 +909,125 @@
                 alert('Undo last action');
             }
         });
-
-        // Simulate audio playback
-        function playAudio(url) {
-            if (!audioContext) initAudioContext();
+// FIXED FILE UPLOAD FUNCTION
+document.getElementById('importAudioBtn').addEventListener('click', function() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'audio/*'; // Accept audio files only
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            console.log('File selected:', file.name, 'Type:', file.type, 'Size:', file.size);
             
-            const audio = new Audio(url);
-            audio.play().catch(err => {
-                console.log('Audio playback failed:', err);
-                alert('Audio playback not available in this demo. In a real implementation, this would play your recorded audio.');
-            });
+            // Create a URL for the audio file
+            const audioUrl = URL.createObjectURL(file);
+            
+            // Add the track with working audio playback
+            addAudioTrack(file.name, audioUrl);
         }
-    </script>
-</body>
-</html>
+    };
+    input.click();
+});
+
+// NEW FUNCTION TO ADD AUDIO TRACK WITH WORKING PLAYBACK
+function addAudioTrack(fileName, audioUrl) {
+    trackCount++;
+    const tracksContainer = document.getElementById('tracksContainer');
+    
+    const trackDiv = document.createElement('div');
+    trackDiv.className = 'track';
+    trackDiv.innerHTML = `
+        <div class="track-info">
+            <div class="track-name">${fileName}</div>
+            <div class="track-controls-track">
+                <button class="track-btn" onclick="toggleMute(this)">🔇 Mute</button>
+                <button class="track-btn" onclick="toggleSolo(this)">🎵 Solo</button>
+                <button class="track-btn" onclick="playUploadedAudio('${audioUrl}', this)">▶️ Play</button>
+                <button class="track-btn" onclick="stopUploadedAudio('${audioUrl}', this)">⏹️ Stop</button>
+                <button class="track-btn" onclick="openEditor(this)">✏️ Edit</button>
+            </div>
+        </div>
+        <div class="track-waveform">
+            <div class="waveform-visual" style="background: linear-gradient(90deg, #4ecdc4 0%, #45b7d1 100%);"></div>
+        </div>
+    `;
+    
+    tracksContainer.appendChild(trackDiv);
+    tracks.push({ 
+        id: `track_${Date.now()}`, 
+        name: fileName, 
+        type: 'uploaded', 
+        audioUrl: audioUrl 
+    });
+}
+
+// FIXED AUDIO PLAYBACK FUNCTIONS
+let currentlyPlayingAudio = null;
+let currentPlayButton = null;
+
+function playUploadedAudio(audioUrl, button) {
+    console.log('Playing audio:', audioUrl);
+    
+    // Stop any currently playing audio
+    if (currentlyPlayingAudio) {
+        currentlyPlayingAudio.pause();
+        currentlyPlayingAudio.currentTime = 0;
+        if (currentPlayButton) {
+            currentPlayButton.textContent = '▶️ Play';
+        }
+    }
+    
+    // Create new audio element
+    const audio = new Audio(audioUrl);
+    audio.controls = true; // Show controls for debugging
+    
+    // Set up event listeners
+    audio.onplay = function() {
+        console.log('Audio started playing');
+        button.textContent = '⏸️ Pause';
+        currentPlayButton = button;
+    };
+    
+    audio.onpause = function() {
+        console.log('Audio paused');
+        button.textContent = '▶️ Play';
+    };
+    
+    audio.onended = function() {
+        console.log('Audio finished');
+        button.textContent = '▶️ Play';
+        currentlyPlayingAudio = null;
+        currentPlayButton = null;
+    };
+    
+    audio.onerror = function(e) {
+        console.error('Audio playback error:', e);
+        alert('Error playing audio. The file format might not be supported or the file might be corrupted.');
+    };
+    
+    // Try to play the audio
+    audio.play().then(() => {
+        console.log('Audio playback started successfully');
+        currentlyPlayingAudio = audio;
+    }).catch(err => {
+        console.error('Audio play failed:', err);
+        alert('Failed to play audio: ' + err.message);
+    });
+}
+
+function stopUploadedAudio(audioUrl, button) {
+    if (currentlyPlayingAudio) {
+        currentlyPlayingAudio.pause();
+        currentlyPlayingAudio.currentTime = 0;
+        currentlyPlayingAudio = null;
+        
+        // Reset all play buttons
+        document.querySelectorAll('.track-btn').forEach(btn => {
+            if (btn.textContent.includes('⏸️')) {
+                btn.textContent = '▶️ Play';
+            }
+        });
+        
+        currentPlayButton = null;
+    }
+}       
