@@ -41,7 +41,37 @@ footer{padding:6px;background:#161616;}
   <div id="unlockDrop">Drop files here</div>
   <input type="file" id="unlockInput" multiple accept="audio/*,.mid,.midi" hidden>
 </div>
+<section>
+<h3>Selection</h3>
+<button onclick="selectAll()">Select All</button>
+<button onclick="clearSelection()">Clear</button>
+</section>
 
+<section>
+<h3>Effects</h3>
+<label>Reverb</label>
+<input id="reverb" type="range" min="0" max="100" value="0">
+<label>Echo</label>
+<input id="echo" type="range" min="0" max="100" value="0">
+<label>Pitch</label>
+<input id="pitch" type="range" min="-12" max="12" value="0">
+<button onclick="applyEffects()">Apply</button>
+</section>
+
+<section>
+<h3>Utility</h3>
+<button onclick="fadeIn()">Fade In</button>
+<button onclick="fadeOut()">Fade Out</button>
+<button class="danger" onclick="deleteSelection()">Delete</button>
+<button onclick="undo()">Undo</button>
+</section>
+
+<section>
+<h3>Playback</h3>
+<button onclick="playSelection()">Play Selection</button>
+<button onclick="playAll()">Play All</button>
+<button onclick="stop()">Stop</button>
+</section>
 <!-- DAW -->
 <div id="dawPage" style="display:none;flex-direction:column;height:100vh">
 <header>
