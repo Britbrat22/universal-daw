@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>miniDAW – no echo, full zoom, editable</title>
+<title>miniDAW – fixed selectors</title>
 <style>
 :root{--bg:#0b0b0b;--panel:#151515;--accent:#4ecdc4;--danger:#ff6b6b;--text:#fff;--sub:#888;--border:#222;}
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif;}
@@ -222,10 +222,11 @@ function buildPanel(){
     p.appendChild(d);
   });
 }
-function muteTrack(id){const t=tracks.find(x=>x.id===id);t.mute=!t.mute;buildPanel();}
-function soloTrack(id){const t=tracks.find(x=>x.id===id);t.solo=!t.solo;buildPanel();}
-function setVol(id,v){const t=tracks.find(x=>x.id===id);t.gain.gain.value=v/100;}
-function setPan(id,v){const t=tracks.find(x=>x.id===id);t.pan.pan.value=v/100;}
+// ----- SAFE LOOKUPS (no querySelector) -----
+function muteTrack(id){const t=tracks.find(x=>x.id===id);if(!t)return;t.mute=!t.mute;buildPanel();}
+function soloTrack(id){const t=tracks.find(x=>x.id===id);if(!t)return;t.solo=!t.solo;buildPanel();}
+function setVol(id,v){const t=tracks.find(x=>x.id===id);if(!t)return;t.gain.gain.value=v/100;}
+function setPan(id,v){const t=tracks.find(x=>x.id===id);if(!t)return;t.pan.pan.value=v/100;}
 
 /* ===== CHAT ===== */
 function sendChat(){
@@ -237,15 +238,12 @@ function sendChat(){
 }
 document.getElementById('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat();});
 
+/* ===== ZOOM (no bad selectors) ===== */
+function zoomIn(){zoom*=1.2;renderRuler();tracks.forEach(t=>{if(t.type==='audio'){const c=document.getElementById('lane_'+t.id)?.querySelector('.wave-canvas');if(c)drawWave(c,t);}});}
+function zoomOut(){zoom/=1.2;renderRuler();tracks.forEach(t=>{if(t.type==='audio'){const c=document.getElementById('lane_'+t.id)?.querySelector('.wave-canvas');if(c)drawWave(c,t);}});}
+
 /* ===== STUBS ===== */
-function splitAtPlayhead(){}
-function copyClip(){}
-function pasteClip(){}
-function deleteClip(){}
-function zoomIn(){zoom*=1.2;renderRuler();tracks.forEach(t=>{if(t.type==='audio'){const c=document.querySelector('#lane_'+t.id+' .wave-canvas');if(c)drawWave(c,t);}});}
-function zoomOut(){zoom/=1.2;renderRuler();tracks.forEach(t=>{if(t.type==='audio'){const c=document.querySelector('#lane_'+t.id+' .wave-canvas');if(c)drawWave(c,t);}});}
-function exportMix(){}
-function undoLast(){}
+function splitAtPlayhead(){}function copyClip(){}function pasteClip(){}function deleteClip(){}function exportMix(){}function undoLast(){}
 
 /* ===== DROP IN DAW ===== */
 const dz=document.getElementById('dropZone');
