@@ -1,6 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta charset="UTF-8">
+<title>Upload Unlock</title>
+<style>
+body{background:#111;color:#fff;font-family:system-ui;text-align:center;padding-top:20vh}
+button{background:#4ecdc4;border:none;padding:10px 20px;border-radius:6px;color:#000;font-weight:bold;cursor:pointer}
+#dropZone{border:2px dashed #555;border-radius:8px;padding:40px;margin:20px auto;max-width:500px}
+</style>
+</head>
+<body>
+
+<button id="unlockBtn">Unlock & Upload</button>
+<div id="dropZone">Drop files here or click "Choose Files"</div>
+<input type="file" id="fileInput" multiple accept="audio/*" style="display:none">
+
+<script>
+const unlockBtn=document.getElementById("unlockBtn"), dropZone=document.getElementById("dropZone"), fileInput=document.getElementById("fileInput");
+const ctx=new (window.AudioContext||window.webkitAudioContext)();
+
+unlockBtn.onclick=()=>{
+  ctx.resume().then(()=>{              // unlock HTTPS AudioContext
+    fileInput.click();                 // open picker
+    unlockBtn.textContent="Audio unlocked – choose or drop files";
+  });
+};
+
+fileInput.onchange=e=>handleFiles([...e.target.files]);
+dropZone.onclick=()=>fileInput.click();
+dropZone.ondragover=e=>{e.preventDefault(); dropZone.style.borderColor="#4ecdc4"};
+dropZone.ondrop=e=>{
+  e.preventDefault(); dropZone.style.borderColor="#555"; handleFiles([...e.dataTransfer.files]);
+};
+
+function handleFiles(files){
+  files.forEach(f=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      ctx.decodeAudioData(e.target.result).then(buf=>{
+        const msg=document.createElement("div");
+        msg.textContent=`✅ Loaded: ${f.name}  (${buf.duration.toFixed(2)} s)`;
+        document.body.appendChild(msg);
+        // ---- your DAW code goes here ----
+      }).catch(err=>alert("Decode error: "+err.message));
+    };
+    reader.readAsArrayBuffer(f);
+  });
+}
+</script>
+</body>
+</html>!DOCTYPE html>
+<html lang="en">
+<head>
 <meta charset="UTF-8"/>
 <title>BandLab-Style AI DAW – Complete</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
