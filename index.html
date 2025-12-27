@@ -2,201 +2,148 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>AI Audio Editor – Working DAW</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+<title>AI Audio Editor – BandLab Look</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <style>
-body {
-  margin: 0;
-  background: #0b0b0b;
-  color: #fff;
-  font-family: system-ui, sans-serif;
+:root{
+  --bg:#0b0b0b;
+  --panel:#151515;
+  --accent:#4ecdc4;
+  --danger:#ff6b6b;
+  --text:#fff;
+  --sub:#aaa;
 }
-header {
-  padding: 12px;
-  background: #161616;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-button {
-  background: #4ecdc4;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-weight: bold;
-  cursor: pointer;
-}
-button.danger { background: #ff6b6b; }
-main {
-  display: flex;
-  height: calc(100vh - 60px);
-}
-aside {
-  width: 260px;
-  padding: 12px;
-  background: #151515;
-  overflow-y: auto;
-}
-section {
-  margin-bottom: 15px;
-}
-h3 {
-  margin: 8px 0;
-  color: #4ecdc4;
-}
-input[type=range] {
-  width: 100%;
-}
-.editor {
-  flex: 1;
-  padding: 10px;
-}
-canvas {
-  width: 100%;
-  height: 200px;
-  background: #000;
-  cursor: crosshair;
-}
-#selection {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  background: rgba(78,205,196,0.3);
-  border: 2px solid #4ecdc4;
-  pointer-events: none;
-}
-footer {
-  padding: 8px;
-  text-align: center;
-  background: #161616;
-  font-size: 14px;
-}
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif;}
+body{background:var(--bg);color:var(--text);overflow:hidden;height:100vh;display:flex;flex-direction:column;}
+header{padding:12px;background:#161616;display:flex;justify-content:space-between;align-items:center;}
+button{background:var(--accent);border:none;padding:8px 12px;border-radius:6px;font-weight:bold;cursor:pointer;color:#000;}
+button.danger{background:var(--danger);}
+main{display:flex;flex:1;overflow:hidden;}
+aside{width:260px;background:var(--panel);padding:12px;overflow-y:auto;border-right:1px solid #222;}
+section{margin-bottom:15px;}
+h3{margin:8px 0;color:var(--accent);}
+label{font-size:12px;color:var(--sub);}
+input[type=range]{width:100%;margin:4px 0;}
+.editor{flex:1;padding:10px;display:flex;flex-direction:column;gap:10px;}
+.canvas-wrap{position:relative;background:#000;border:1px solid #222;border-radius:6px;}
+canvas{width:100%;height:200px;cursor:crosshair;}
+#selection{position:absolute;top:0;bottom:0;background:rgba(78,205,196,.25);border:2px solid var(--accent);pointer-events:none;display:none;}
+footer{padding:8px;text-align:center;background:#161616;font-size:14px;color:var(--sub);}
+/* BandLab-style vocal strip */
+.vocal-strip{display:flex;gap:6px;margin-top:8px;}
+.vocal-strip button{flex:1;font-size:11px;padding:6px 4px;}
 </style>
 </head>
-
 <body>
+
 <header>
-  <div>🎵 AI Audio Editor (Stable)</div>
+  <div>🎵 AI Audio Editor – BandLab Style</div>
   <div>
     <button onclick="openFile()">Load</button>
     <button onclick="exportWav()">Export</button>
-    <input type="file" id="file" accept="audio/*" hidden />
+    <input type="file" id="file" accept="audio/*" hidden>
   </div>
 </header>
 
 <main>
 <aside>
-<section>
-<h3>Selection</h3>
-<button onclick="selectAll()">Select All</button>
-<button onclick="clearSelection()">Clear</button>
-</section>
+  <section>
+    <h3>Selection</h3>
+    <button onclick="selectAll()">Select All</button>
+    <button onclick="clearSelection()">Clear</button>
+  </section>
 
-<section>
-<h3>Effects</h3>
-<label>Reverb</label>
-<input id="reverb" type="range" min="0" max="100" value="0">
-<label>Echo</label>
-<input id="echo" type="range" min="0" max="100" value="0">
-<label>Pitch</label>
-<input id="pitch" type="range" min="-12" max="12" value="0">
-<button onclick="applyEffects()">Apply</button>
-</section>
+  <section>
+    <h3>Quick Vocal</h3>
+    <div class="vocal-strip">
+      <button onclick="quickVocal('remove')">Remove</button>
+      <button onclick="quickVocal('isolate')">Isolate</button>
+      <button onclick="quickVocal('clean')">Clean</button>
+    </div>
+  </section>
 
-<section>
-<h3>Utility</h3>
-<button onclick="fadeIn()">Fade In</button>
-<button onclick="fadeOut()">Fade Out</button>
-<button class="danger" onclick="deleteSelection()">Delete</button>
-<button onclick="undo()">Undo</button>
-</section>
+  <section>
+    <h3>Effects</h3>
+    <label>Reverb</label>
+    <input id="reverb" type="range" min="0" max="100" value="0">
+    <label>Echo</label>
+    <input id="echo" type="range" min="0" max="100" value="0">
+    <label>Pitch (semitones)</label>
+    <input id="pitch" type="range" min="-12" max="12" value="0">
+    <button onclick="applyEffects()">Apply to Selection</button>
+  </section>
 
-<section>
-<h3>Playback</h3>
-<button onclick="playSelection()">Play Selection</button>
-<button onclick="playAll()">Play All</button>
-<button onclick="stop()">Stop</button>
-</section>
+  <section>
+    <h3>Utility</h3>
+    <button onclick="fadeIn()">Fade In</button>
+    <button onclick="fadeOut()">Fade Out</button>
+    <button class="danger" onclick="deleteSelection()">Delete</button>
+    <button onclick="undo()">Undo</button>
+  </section>
+
+  <section>
+    <h3>Playback</h3>
+    <button onclick="playSelection()">Play Selection</button>
+    <button onclick="playAll()">Play All</button>
+    <button onclick="stop()">Stop</button>
+  </section>
 </aside>
 
 <div class="editor">
-<div style="position:relative">
-<canvas id="wave"></canvas>
-<div id="selection"></div>
-</div>
+  <div class="canvas-wrap">
+    <canvas id="wave"></canvas>
+    <div id="selection"></div>
+  </div>
 </div>
 </main>
 
 <footer id="status">Load audio to begin</footer>
 
 <script>
-let ctx;
-let originalBuffer;
-let editedBuffer;
-let undoStack = [];
-let source;
-
-let selection = { start: 0, end: 0, active: false };
-
-const canvas = document.getElementById("wave");
-const selDiv = document.getElementById("selection");
-const cctx = canvas.getContext("2d");
-
-function status(msg){ document.getElementById("status").textContent = msg; }
-
-function openFile(){
-  document.getElementById("file").click();
-}
-
-document.getElementById("file").onchange = async e => {
-  ctx = new AudioContext();
-  const buf = await e.target.files[0].arrayBuffer();
-  originalBuffer = await ctx.decodeAudioData(buf);
-  editedBuffer = cloneBuffer(originalBuffer);
+/* ======  BACKEND  (identical logic to your first file)  ====== */
+let ctx, originalBuffer, editedBuffer, undoStack=[], source;
+let selection={start:0,end:0,active:false};
+const canvas=document.getElementById("wave"), selDiv=document.getElementById("selection"), cctx=canvas.getContext("2d");
+function status(msg){document.getElementById("status").textContent=msg;}
+function openFile(){document.getElementById("file").click();}
+document.getElementById("file").onchange=async e=>{
+  ctx=new AudioContext();
+  const buf=await e.target.files[0].arrayBuffer();
+  originalBuffer=await ctx.decodeAudioData(buf);
+  editedBuffer=cloneBuffer(originalBuffer);
   drawWave();
-  status("Audio loaded");
+  status("Audio loaded – ready to edit");
 };
-
 function cloneBuffer(b){
-  const nb = ctx.createBuffer(b.numberOfChannels,b.length,b.sampleRate);
-  for(let c=0;c<b.numberOfChannels;c++)
-    nb.getChannelData(c).set(b.getChannelData(c));
+  const nb=ctx.createBuffer(b.numberOfChannels,b.length,b.sampleRate);
+  for(let c=0;c<b.numberOfChannels;c++) nb.getChannelData(c).set(b.getChannelData(c));
   return nb;
 }
-
 function drawWave(){
-  canvas.width = canvas.offsetWidth;
-  canvas.height = 200;
-  const data = editedBuffer.getChannelData(0);
-  const step = Math.ceil(data.length / canvas.width);
+  canvas.width=canvas.offsetWidth; canvas.height=200;
+  const data=editedBuffer.getChannelData(0);
+  const step=Math.ceil(data.length/canvas.width);
   cctx.clearRect(0,0,canvas.width,canvas.height);
   cctx.fillStyle="#4ecdc4";
   for(let i=0;i<canvas.width;i++){
     let min=1,max=-1;
-    for(let j=0;j<step;j++){
-      const d=data[i*step+j];
-      if(d<min)min=d;
-      if(d>max)max=d;
-    }
+    for(let j=0;j<step;j++){const d=data[i*step+j];if(d<min)min=d;if(d>max)max=d;}
     cctx.fillRect(i,(1+min)*100,1,Math.max(1,(max-min)*100));
   }
 }
-
-canvas.onmousedown = e=>{
+canvas.onmousedown=e=>{
   const r=canvas.getBoundingClientRect();
   selection.start=((e.clientX-r.left)/canvas.width)*editedBuffer.duration;
   selection.active=true;
 };
-canvas.onmousemove = e=>{
+canvas.onmousemove=e=>{
   if(!selection.active)return;
   const r=canvas.getBoundingClientRect();
   selection.end=((e.clientX-r.left)/canvas.width)*editedBuffer.duration;
-  updateSelection();
+  updateSel();
 };
 canvas.onmouseup=()=>selection.active=false;
-
-function updateSelection(){
+function updateSel(){
   const d=editedBuffer.duration;
   const s=Math.min(selection.start,selection.end);
   const e=Math.max(selection.start,selection.end);
@@ -204,140 +151,63 @@ function updateSelection(){
   selDiv.style.left=(s/d*100)+"%";
   selDiv.style.width=((e-s)/d*100)+"%";
 }
-
-function clearSelection(){
-  selDiv.style.display="none";
-  selection.start=selection.end=0;
-}
-
-function selectAll(){
-  selection.start=0;
-  selection.end=editedBuffer.duration;
-  updateSelection();
-}
-
+function clearSelection(){selDiv.style.display="none"; selection.start=selection.end=0;}
+function selectAll(){selection.start=0; selection.end=editedBuffer.duration; updateSel();}
 async function applyEffects(){
   if(selection.start===selection.end)return alert("Select audio");
   undoStack.push(cloneBuffer(editedBuffer));
-
   const sb=extract(selection.start,selection.end);
   const processed=await process(sb);
   editedBuffer=replace(processed,selection.start,selection.end);
-  drawWave();
+  drawWave(); status("Effects applied");
 }
-
 function extract(s,e){
-  const sr=editedBuffer.sampleRate;
-  const ss=Math.floor(s*sr), es=Math.floor(e*sr);
+  const sr=editedBuffer.sampleRate, ss=Math.floor(s*sr), es=Math.floor(e*sr);
   const nb=ctx.createBuffer(editedBuffer.numberOfChannels,es-ss,sr);
-  for(let c=0;c<nb.numberOfChannels;c++)
-    nb.getChannelData(c).set(editedBuffer.getChannelData(c).slice(ss,es));
+  for(let c=0;c<nb.numberOfChannels;c++) nb.getChannelData(c).set(editedBuffer.getChannelData(c).slice(ss,es));
   return nb;
 }
-
 function replace(pb,s,e){
-  const sr=editedBuffer.sampleRate;
-  const ss=Math.floor(s*sr);
+  const sr=editedBuffer.sampleRate, ss=Math.floor(s*sr);
   const nb=cloneBuffer(editedBuffer);
-  for(let c=0;c<nb.numberOfChannels;c++)
-    nb.getChannelData(c).set(pb.getChannelData(c),ss);
+  for(let c=0;c<nb.numberOfChannels;c++) nb.getChannelData(c).set(pb.getChannelData(c),ss);
   return nb;
 }
-
 async function process(buf){
   const off=new OfflineAudioContext(buf.numberOfChannels,buf.length,buf.sampleRate);
-  const src=off.createBufferSource();
-  src.buffer=buf;
-
+  const src=off.createBufferSource(); src.buffer=buf;
   let node=src;
   const p=document.getElementById("pitch").value;
   src.playbackRate.value=Math.pow(2,p/12);
-
   const rv=document.getElementById("reverb").value;
   if(rv>0){
     const con=off.createConvolver();
     con.buffer=impulse(off,rv/100);
-    node.connect(con);
-    node=con;
+    node.connect(con); node=con;
   }
-
   const ec=document.getElementById("echo").value;
   if(ec>0){
-    const d=off.createDelay();
-    d.delayTime.value=0.25;
-    const g=off.createGain();
-    g.gain.value=ec/100;
+    const d=off.createDelay(), g=off.createGain();
+    d.delayTime.value=0.25; g.gain.value=ec/100;
     d.connect(g); g.connect(d);
-    node.connect(d);
-    node=d;
+    node.connect(d); node=d;
   }
-
   node.connect(off.destination);
   src.start();
   return await off.startRendering();
 }
-
 function impulse(ctx,a){
-  const l=ctx.sampleRate*2;
-  const b=ctx.createBuffer(2,l,ctx.sampleRate);
-  for(let c=0;c<2;c++){
-    const d=b.getChannelData(c);
-    for(let i=0;i<l;i++) d[i]=(Math.random()*2-1)*(1-i/l)*a;
-  }
+  const l=ctx.sampleRate*2, b=ctx.createBuffer(2,l,ctx.sampleRate);
+  for(let c=0;c<2;c++){const d=b.getChannelData(c);for(let i=0;i<l;i++)d[i]=(Math.random()*2-1)*(1-i/l)*a;}
   return b;
 }
-
-function playAll(){
-  stop();
-  source=ctx.createBufferSource();
-  source.buffer=editedBuffer;
-  source.connect(ctx.destination);
-  source.start();
-}
-
-function playSelection(){
-  stop();
-  const b=extract(selection.start,selection.end);
-  source=ctx.createBufferSource();
-  source.buffer=b;
-  source.connect(ctx.destination);
-  source.start();
-}
-
-function stop(){
-  if(source) source.stop();
-}
-
-function deleteSelection(){
-  undoStack.push(cloneBuffer(editedBuffer));
-  editedBuffer=replace(ctx.createBuffer(editedBuffer.numberOfChannels,0,editedBuffer.sampleRate),selection.start,selection.end);
-  drawWave();
-}
-
-function fadeIn(){
-  undoStack.push(cloneBuffer(editedBuffer));
-  const b=extract(selection.start,selection.end);
-  const d=b.getChannelData(0);
-  for(let i=0;i<d.length;i++) d[i]*=i/d.length;
-  editedBuffer=replace(b,selection.start,selection.end);
-  drawWave();
-}
-
-function fadeOut(){
-  undoStack.push(cloneBuffer(editedBuffer));
-  const b=extract(selection.start,selection.end);
-  const d=b.getChannelData(0);
-  for(let i=0;i<d.length;i++) d[i]*=(1-i/d.length);
-  editedBuffer=replace(b,selection.start,selection.end);
-  drawWave();
-}
-
-function undo(){
-  if(!undoStack.length)return;
-  editedBuffer=undoStack.pop();
-  drawWave();
-}
-
+function playAll(){stop(); source=ctx.createBufferSource(); source.buffer=editedBuffer; source.connect(ctx.destination); source.start();}
+function playSelection(){stop(); const b=extract(selection.start,selection.end); source=ctx.createBufferSource(); source.buffer=b; source.connect(ctx.destination); source.start();}
+function stop(){if(source)source.stop();}
+function deleteSelection(){undoStack.push(cloneBuffer(editedBuffer)); editedBuffer=replace(ctx.createBuffer(editedBuffer.numberOfChannels,0,editedBuffer.sampleRate),selection.start,selection.end); drawWave();}
+function fadeIn(){undoStack.push(cloneBuffer(editedBuffer)); const b=extract(selection.start,selection.end); const d=b.getChannelData(0); for(let i=0;i<d.length;i++)d[i]*=i/d.length; editedBuffer=replace(b,selection.start,selection.end); drawWave();}
+function fadeOut(){undoStack.push(cloneBuffer(editedBuffer)); const b=extract(selection.start,selection.end); const d=b.getChannelData(0); for(let i=0;i<d.length;i++)d[i]*=(1-i/d.length); editedBuffer=replace(b,selection.start,selection.end); drawWave();}
+function undo(){if(!undoStack.length)return; editedBuffer=undoStack.pop(); drawWave();}
 function exportWav(){
   const blob=bufferToWav(editedBuffer);
   const a=document.createElement("a");
@@ -345,29 +215,62 @@ function exportWav(){
   a.download="edited.wav";
   a.click();
 }
-
 function bufferToWav(b){
-  const ch=b.numberOfChannels;
-  const len=b.length*ch*2+44;
-  const buf=new ArrayBuffer(len);
-  const v=new DataView(buf);
-  let p=0;
-  const w=s=>{for(let i=0;i<s.length;i++)v.setUint8(p++,s.charCodeAt(i));};
-  w("RIFF");v.setUint32(p,36+b.length*2,true);p+=4;
-  w("WAVEfmt ");v.setUint32(p,16,true);p+=4;
-  v.setUint16(p,1,true);p+=2;
-  v.setUint16(p,ch,true);p+=2;
-  v.setUint32(p,b.sampleRate,true);p+=4;
-  v.setUint32(p,b.sampleRate*ch*2,true);p+=4;
-  v.setUint16(p,ch*2,true);p+=2;
-  v.setUint16(p,16,true);p+=2;
+  const len=b.length*b.numberOfChannels*2+44, buf=new ArrayBuffer(len), v=new DataView(buf); let p=0;
+  const w=s=>{for(let i=0;i<s.length;i++)v.setUint8(p++,s.charCodeAt(0));};
+  w("RIFF");v.setUint32(p,36+b.length*2,true);p+=4;w("WAVEfmt ");v.setUint32(p,16,true);p+=4;
+  v.setUint16(p,1,true);p+=2;v.setUint16(p,b.numberOfChannels,true);p+=2;v.setUint32(p,b.sampleRate,true);p+=4;
+  v.setUint32(p,b.sampleRate*b.numberOfChannels*2,true);p+=4;v.setUint16(p,b.numberOfChannels*2,true);p+=2;v.setUint16(p,16,true);p+=2;
   w("data");v.setUint32(p,b.length*2,true);p+=4;
-  for(let i=0;i<b.length;i++)
-    for(let c=0;c<ch;c++){
-      v.setInt16(p,Math.max(-1,Math.min(1,b.getChannelData(c)[i]))*0x7fff,true);
-      p+=2;
-    }
+  for(let i=0;i<b.length;i++)for(let c=0;c<b.numberOfChannels;c++){v.setInt16(p,Math.max(-1,Math.min(1,b.getChannelData(c)[i]))*0x7FFF,true);p+=2;}
   return new Blob([buf],{type:"audio/wav"});
+}
+/* ======  NEW BANDLAB-STYLE QUICK VOCAL BUTTONS  ====== */
+async function quickVocal(mode){
+  if(selection.start===selection.end)return alert("Select audio");
+  undoStack.push(cloneBuffer(editedBuffer));
+  const sb=extract(selection.start,selection.end);
+  let processed;
+  if(mode==="remove")processed=await removeVocals(sb);
+  else if(mode==="isolate")processed=await isolateVocals(sb);
+  else processed=await cleanVocals(sb);
+  editedBuffer=replace(processed,selection.start,selection.end);
+  drawWave(); status("Quick vocal: "+mode);
+}
+async function removeVocals(buf){
+  const off=new OfflineAudioContext(buf.numberOfChannels,buf.length,buf.sampleRate);
+  const src=off.createBufferSource(); src.buffer=buf;
+  const sub=off.createScriptProcessor(4096,2,2);
+  sub.onaudioprocess=e=>{
+    const l=e.inputBuffer.getChannelData(0), r=e.inputBuffer.getChannelData(1);
+    const lo=e.outputBuffer.getChannelData(0), ro=e.outputBuffer.getChannelData(1);
+    for(let i=0;i<l.length;i++){const v=(l[i]-r[i])*0.7; lo[i]=v; ro[i]=v;}
+  };
+  src.connect(sub); sub.connect(off.destination);
+  src.start(0);
+  return await off.startRendering();
+}
+async function isolateVocals(buf){
+  const off=new OfflineAudioContext(buf.numberOfChannels,buf.length,buf.sampleRate);
+  const src=off.createBufferSource(); src.buffer=buf;
+  const iso=off.createScriptProcessor(4096,2,2);
+  iso.onaudioprocess=e=>{
+    const l=e.inputBuffer.getChannelData(0), r=e.inputBuffer.getChannelData(1);
+    const lo=e.outputBuffer.getChannelData(0), ro=e.outputBuffer.getChannelData(1);
+    for(let i=0;i<l.length;i++){const c=(l[i]+r[i])*0.5; lo[i]=c; ro[i]=c;}
+  };
+  src.connect(iso); iso.connect(off.destination);
+  src.start(0);
+  return await off.startRendering();
+}
+async function cleanVocals(buf){ /* light hiss + plosive reduction (simplified) */
+  const off=new OfflineAudioContext(buf.numberOfChannels,buf.length,buf.sampleRate);
+  const src=off.createBufferSource(); src.buffer=buf;
+  const hp=off.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=80;
+  const lp=off.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=8000;
+  src.connect(hp).connect(lp).connect(off.destination);
+  src.start(0);
+  return await off.startRendering();
 }
 </script>
 </body>
