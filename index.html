@@ -2,59 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Upload Unlock</title>
-<style>
-body{background:#111;color:#fff;font-family:system-ui;text-align:center;padding-top:20vh}
-button{background:#4ecdc4;border:none;padding:10px 20px;border-radius:6px;color:#000;font-weight:bold;cursor:pointer}
-#dropZone{border:2px dashed #555;border-radius:8px;padding:40px;margin:20px auto;max-width:500px}
-</style>
-</head>
-<body>
-
-<button id="unlockBtn">Unlock & Upload</button>
-<div id="dropZone">Drop files here or click "Choose Files"</div>
-<input type="file" id="fileInput" multiple accept="audio/*" style="display:none">
-
-<script>
-const unlockBtn=document.getElementById("unlockBtn"), dropZone=document.getElementById("dropZone"), fileInput=document.getElementById("fileInput");
-const ctx=new (window.AudioContext||window.webkitAudioContext)();
-
-unlockBtn.onclick=()=>{
-  ctx.resume().then(()=>{              // unlock HTTPS AudioContext
-    fileInput.click();                 // open picker
-    unlockBtn.textContent="Audio unlocked – choose or drop files";
-  });
-};
-
-fileInput.onchange=e=>handleFiles([...e.target.files]);
-dropZone.onclick=()=>fileInput.click();
-dropZone.ondragover=e=>{e.preventDefault(); dropZone.style.borderColor="#4ecdc4"};
-dropZone.ondrop=e=>{
-  e.preventDefault(); dropZone.style.borderColor="#555"; handleFiles([...e.dataTransfer.files]);
-};
-
-function handleFiles(files){
-  files.forEach(f=>{
-    const reader=new FileReader();
-    reader.onload=e=>{
-      ctx.decodeAudioData(e.target.result).then(buf=>{
-        const msg=document.createElement("div");
-        msg.textContent=`✅ Loaded: ${f.name}  (${buf.duration.toFixed(2)} s)`;
-        document.body.appendChild(msg);
-        // ---- your DAW code goes here ----
-      }).catch(err=>alert("Decode error: "+err.message));
-    };
-    reader.readAsArrayBuffer(f);
-  });
-}
-</script>
-</body>
-</html>!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<title>BandLab-Style AI DAW – Complete</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BandLab-Style AI DAW</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 :root{
   --bg:#0b0b0b;--panel:#151515;--accent:#4ecdc4;--danger:#ff6b6b;--text:#fff;--sub:#aaa;--border:#222;
@@ -66,8 +15,10 @@ body{
   min-height:100vh;
   display:flex;
   flex-direction:column;
-  overflow:auto; /* allow scrolling if needed */
+  overflow:hidden;
 }
+
+/* HEADER */
 header{
   padding:8px;
   background:#161616;
@@ -89,32 +40,30 @@ button{
   cursor:pointer;
 }
 button.danger{background:var(--danger);}
+
+/* MAIN DAW */
+#dawPage{
+  display:none;
+  flex-direction:column;
+  flex:1 1 auto;
+  min-height:0;
+}
 main{
   display:flex;
   flex:1 1 auto;
-  min-height:0; /* needed for flex scroll */
+  min-height:0;
+  overflow:hidden;
 }
 .left{
-  width:260px;
+  flex:0 0 260px;
   background:var(--panel);
   padding:8px;
-  overflow-y:auto; /* scrollable panel */
+  overflow-y:auto;
+  min-height:0;
   border-right:1px solid var(--border);
-  max-height: calc(100vh - 50px); /* account for header/footer */
-}
-.track-controls{
-  background:rgba(0,0,0,.3);
-  padding:6px;
-  margin-bottom:6px;
-  border-radius:4px;
-}
-.track-controls h4{
-  font-size:12px;
-  margin-bottom:4px;
-  color:var(--accent);
 }
 .timeline-wrap{
-  flex:1;
+  flex:1 1 auto;
   display:flex;
   flex-direction:column;
   min-height:0;
@@ -135,8 +84,9 @@ main{
   color:#888;
 }
 .timeline-body{
-  flex:1;
-  overflow:auto; /* scroll timeline vertically if needed */
+  flex:1 1 auto;
+  overflow-y:auto;
+  min-height:0;
 }
 .track-lane{
   height:80px;
@@ -175,11 +125,46 @@ main{
 .loop-lib{background:rgba(0,0,0,.3);padding:6px;border-radius:4px;font-size:10px;margin-top:4px;}
 .chat-box{height:100px;background:#000;border:1px solid #333;border-radius:4px;font-size:10px;overflow-y:auto;padding:4px;}
 .chat-input{width:100%;margin-top:4px;font-size:10px;padding:4px;border:1px solid #333;border-radius:4px;background:#111;color:#fff;}
-footer{padding:6px;background:#161616;position:sticky;bottom:0;}
+footer{padding:6px;background:#161616;position:sticky;bottom:0;z-index:5;}
+
+/* UNLOCK SCREEN */
+#unlockScreen{
+  position:fixed;
+  inset:0;
+  background:#111;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:20px;
+  z-index:1000;
+}
+#unlockScreen button{
+  padding:12px 24px;
+  font-size:16px;
+}
+#unlockDrop{
+  border:2px dashed #555;
+  border-radius:8px;
+  padding:40px;
+  max-width:500px;
+  text-align:center;
+  color:#888;
+  cursor:pointer;
+}
 </style>
 </head>
 <body>
 
+<!-- UNLOCK SCREEN -->
+<div id="unlockScreen">
+  <button id="unlockBtn">Unlock & Upload</button>
+  <div id="unlockDrop">Drop files here or click "Unlock & Upload"</div>
+  <input type="file" id="unlockInput" multiple accept="audio/*,.mid,.midi" style="display:none">
+</div>
+
+<!-- DAW PAGE -->
+<div id="dawPage" style="flex:1 1 auto; display:flex; flex-direction:column;">
 <header>
   <div class="drop-here" id="dropZone">Drop audio / MIDI files here (or click)</div>
   <button onclick="playAll()">▶️ Play</button>
@@ -244,6 +229,7 @@ footer{padding:6px;background:#161616;position:sticky;bottom:0;}
 </main>
 
 <footer id="status">Ready – drop audio / MIDI files to start</footer>
+</div>
 
 <script>
 /* ===== GLOBALS ===== */
@@ -259,13 +245,28 @@ let clipboard=null; const undoStack=[];
 function status(msg){document.getElementById("status").innerText=msg;}
 function addHistory(msg){document.getElementById("history").innerHTML+=msg+"<br>";}
 
-/* ===== FILE / DROP ===== */
-const dropZone=document.getElementById("dropZone"), fileInput=document.getElementById("fileInput");
+/* ===== UNLOCK SCREEN ===== */
+const unlockScreen=document.getElementById("unlockScreen");
+const unlockBtn=document.getElementById("unlockBtn");
+const unlockInput=document.getElementById("unlockInput");
+const unlockDrop=document.getElementById("unlockDrop");
+
+unlockBtn.onclick = async () => { await ctx.resume(); unlockInput.click(); };
+unlockDrop.onclick = () => unlockInput.click();
+unlockDrop.ondragover = e=>{ e.preventDefault(); unlockDrop.style.borderColor="#4ecdc4"; };
+unlockDrop.ondrop = async e=>{ e.preventDefault(); unlockDrop.style.borderColor="#555"; await addFiles([...e.dataTransfer.files]); };
+
+unlockInput.onchange = async e => { await addFiles([...e.target.files]); };
+
+/* ===== FILE DROP (DAW) ===== */
+const dropZone=document.getElementById("dropZone");
+const fileInput=document.getElementById("fileInput");
 dropZone.onclick=()=>fileInput.click();
 dropZone.ondragover=e=>{e.preventDefault(); dropZone.style.borderColor="#4ecdc4";};
 dropZone.ondrop=async e=>{e.preventDefault(); dropZone.style.borderColor="#444"; await addFiles([...e.dataTransfer.files]);};
 fileInput.onchange=async e=>await addFiles([...e.target.files]);
 
+/* ===== ADD FILES ===== */
 async function addFiles(files){
   for(const f of files){
     const buf=await f.arrayBuffer();
@@ -284,18 +285,93 @@ async function addFiles(files){
   }
   renderRuler();
   status(`${tracks.length} file(s) loaded`);
+  if(unlockScreen.style.display!=="none"){
+    unlockScreen.style.display="none";
+    document.getElementById("dawPage").style.display="flex";
+  }
 }
 
 async function midiToNotes(buf){return [{pitch:60,velocity:100,start:0,end:0.5},{pitch:64,velocity:90,start:0.5,end:1},{pitch:67,velocity:80,start:1,end:1.5}];}
 
+/* ===== PLAYBACK ===== */
+let playInterval;
 function playAll(){ if(isPlaying)return; isPlaying=true; playInterval=setInterval(()=>{playhead+=0.01; updatePlayhead(); if(loop && playhead>getMaxDur()) playhead=0;},10); tracks.forEach(playTrack); status("Playing");}
 function stopAll(){ isPlaying=false; clearInterval(playInterval); tracks.forEach(t=>{if(t.source) t.source.stop();}); playhead=0; updatePlayhead(); status("Stopped");}
 function updatePlayhead(){const ruler=document.getElementById("ruler"); const left=(playhead/getMaxDur())*ruler.offsetWidth; document.getElementById("playhead").style.left=left+"px";}
 function getMaxDur(){return tracks.reduce((max,t)=>{if(t.type==="audio") return Math.max(max,...t.clips.map(c=>c.end)); if(t.type==="midi") return Math.max(max,...t.notes.map(n=>n.end)); return max;},0)||1;}
 function loopToggle(){loop=!loop; status(loop?"Loop ON":"Loop OFF");}
+function playTrack(t){
+  if(t.type==="audio" && t.buffer){
+    t.source=ctx.createBufferSource();
+    t.source.buffer=t.buffer;
+    t.source.connect(t.gain); t.gain.connect(t.pan); t.pan.connect(masterGain);
+    t.source.start(ctx.currentTime,playhead);
+  }
+}
 
-buildImpulse();
-window.onload=()=>{addHistory("App ready"); status("Drop audio / MIDI files to start");};
+/* ===== UI ===== */
+function renderRuler(){
+  const ruler=document.getElementById("ruler");
+  ruler.innerHTML="";
+  const dur=getMaxDur();
+  for(let i=0;i<=dur;i++){
+    const tick=document.createElement("div");
+    tick.style.position="absolute";
+    tick.style.left=(i/dur)*ruler.offsetWidth+"px";
+    tick.style.top="0";
+    tick.style.width="1px";
+    tick.style.height="100%";
+    tick.style.background="#444";
+    tick.innerHTML=`<span style="margin-left:2px">${i}s</span>`;
+    ruler.appendChild(tick);
+  }
+}
+function createTrackLane(id){
+  const lane=document.createElement("div");
+  lane.className="track-lane";
+  lane.id="lane_"+id;
+  lane.innerHTML=`<canvas class="wave-canvas"></canvas>`;
+  document.getElementById("timeline").appendChild(lane);
+}
+function createMidiLane(id){
+  const lane=document.createElement("div");
+  lane.className="track-lane";
+  lane.id="lane_"+id;
+  lane.innerHTML=`<canvas class="midi-canvas"></canvas>`;
+  document.getElementById("timeline").appendChild(lane);
+}
+
+/* ===== STUBS ===== */
+function splitAtPlayhead(){}
+function copyClip(){}
+function pasteClip(){}
+function deleteClip(){}
+function zoomIn(){}
+function zoomOut(){}
+function exportMix(){}
+function aiBeatGen(){}
+function aiVocalClean(){}
+function aiAlignVocals(){}
+function aiWriteLyrics(){}
+function addMidiTrack(){}
+function addLoop(){}
+function sendChat(){}
+function undoLast(){}
+
+/* ===== REVERB IMPULSE ===== */
+function buildImpulse(){
+  const len=ctx.sampleRate*2;
+  const impulse=ctx.createBuffer(2,len,ctx.sampleRate);
+  for(let c=0;c<2;c++){
+    const chan=impulse.getChannelData(c);
+    for(let i=0;i<len;i++) chan[i]=(Math.random()*2-1)*Math.pow(1-i/len,2);
+  }
+  masterReverb.buffer=impulse;
+}
+
+/* ===== INIT ===== */
+window.onload=()=>{addHistory("App ready"); status("Press Unlock & Upload to begin"); buildImpulse();};
 </script>
+
 </body>
 </html>
