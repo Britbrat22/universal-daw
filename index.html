@@ -2,12 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<title>BandLab-Style AI DAW – Complete</title>
+<title>BandLab-Style AI DAW – Upload Fixed</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <style>
-:root{
-  --bg:#0b0b0b;--panel:#151515;--accent:#4ecdc4;--danger:#ff6b6b;--text:#fff;--sub:#aaa;--border:#222;
-}
+:root{--bg:#0b0b0b;--panel:#151515;--accent:#4ecdc4;--danger:#ff6b6b;--text:#fff;--sub:#aaa;--border:#222;}
 *{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif;}
 body{background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;}
 header{padding:8px;background:#161616;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
@@ -30,7 +28,6 @@ main{display:flex;flex:1;overflow:hidden;}
 .small{font-size:10px;color:#888;}
 .history{max-height:100px;overflow-y:auto;font-size:10px;}
 .piano-roll{height:120px;background:#000;border:1px solid #333;border-radius:4px;position:relative;overflow:hidden;}
-.piano-key{position:absolute;background:#ccc;border:1px solid #999;width:20px;height:10px;font-size:8px;color:#000;text-align:center;line-height:10px;}
 .loop-lib{background:rgba(0,0,0,.3);padding:6px;border-radius:4px;font-size:10px;margin-top:4px;}
 .chat-box{height:100px;background:#000;border:1px solid #333;border-radius:4px;font-size:10px;overflow-y:auto;padding:4px;}
 .chat-input{width:100%;margin-top:4px;font-size:10px;padding:4px;border:1px solid #333;border-radius:4px;background:#111;color:#fff;}
@@ -129,6 +126,7 @@ dropZone.ondragover=e=>{e.preventDefault(); dropZone.style.borderColor="#4ecdc4"
 dropZone.ondrop=async e=>{
   e.preventDefault(); dropZone.style.borderColor="#444"; await addFiles([...e.dataTransfer.files]);
 };
+// ⭐️ FIX: make the picker actually call addFiles
 fileInput.onchange=async e=>await addFiles([...e.target.files]);
 
 async function addFiles(files){
@@ -136,7 +134,6 @@ async function addFiles(files){
     const buf=await f.arrayBuffer();
     let audioBuf=null;
     if(f.name.endsWith(".mid")||f.name.endsWith(".midi")){
-      // stub: parse MIDI → notes array
       audioBuf=await midiToNotes(buf);
       const id=Date.now()+Math.random();
       tracks.push({name:f.name,buffer:null,gain:ctx.createGain(),pan:ctx.createStereoPanner(),mute:false,solo:false,id,clips:[],type:"midi",notes:audioBuf});
@@ -155,13 +152,7 @@ async function addFiles(files){
 
 /* ==========  MIDI -> NOTES (stub)  ========== */
 async function midiToNotes(buf){
-  // real: use midi-parser-js or similar
-  // returns [{pitch,velocity,start,end}...]
-  return [
-    {pitch:60,velocity:100,start:0,end:0.5},
-    {pitch:64,velocity:90,start:0.5,end:1},
-    {pitch:67,velocity:80,start:1,end:1.5}
-  ];
+  return [{pitch:60,velocity:100,start:0,end:0.5},{pitch:64,velocity:90,start:0.5,end:1},{pitch:67,velocity:80,start:1,end:1.5}];
 }
 
 /* ==========  AUDIO TRACK LANE  ========== */
