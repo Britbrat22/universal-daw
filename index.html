@@ -38,59 +38,8 @@ main{display:flex;flex:1;overflow:hidden;}
 </head>
 <body>
 
-<header><!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Ultra-Simple Upload</title>
-<style>
-body{background:#111;color:#fff;font-family:system-ui;text-align:center;padding-top:20vh}
-button{background:#4ecdc4;border:none;padding:10px 20px;border-radius:6px;color:#000;font-weight:bold;cursor:pointer}
-#dropZone{border:2px dashed #555;border-radius:8px;padding:40px;margin:20px auto;max-width:500px}
-</style>
-</head>
-<body>
-
-<h2>Click to allow audio → then upload</h2>
-<button id="startBtn">Start Audio & Upload</button>
-
-<div class="drop-zone" id="dropZone">Drop files here or click "Choose Files"</div>
-<input type="file" id="fileInput" multiple accept="audio/*" style="display:none">
-
-<script>
-const startBtn=document.getElementById("startBtn"), dropZone=document.getElementById("dropZone"), fileInput=document.getElementById("fileInput");
-const ctx=new (window.AudioContext||window.webkitAudioContext)();
-
-startBtn.onclick=()=>{
-  ctx.resume().then(()=>{          // unlock HTTPS audio
-    fileInput.click();             // open picker
-    startBtn.textContent="Audio unlocked – choose or drop files";
-  });
-};
-
-fileInput.onchange=e=>handleFiles([...e.target.files]);
-dropZone.onclick=()=>fileInput.click();
-dropZone.ondragover=e=>{e.preventDefault(); dropZone.style.borderColor="#4ecdc4"};
-dropZone.ondrop=e=>{
-  e.preventDefault(); dropZone.style.borderColor="#555"; handleFiles([...e.dataTransfer.files]);
-};
-
-function handleFiles(files){
-  files.forEach(f=>{
-    const reader=new FileReader();
-    reader.onload=e=>{
-      ctx.decodeAudioData(e.target.result).then(buf=>{
-        const msg=document.createElement("div");
-        msg.textContent=`✅ Loaded: ${f.name}  (${buf.duration.toFixed(2)} s)`;
-        document.body.appendChild(msg);
-      }).catch(err=>alert("Decode error: "+err.message));
-    };
-    reader.readAsArrayBuffer(f);
-  });
-}
-</script>
-</body>
-</html>  <div class="drop-here" id="dropZone">Drop audio / MIDI files here (or click)</div>
+<header>
+  <div class="drop-here" id="dropZone">Drop audio / MIDI files here (or click)</div>
   <button onclick="playAll()">▶️ Play</button>
   <button onclick="stopAll()">⏹️ Stop</button>
   <button onclick="loopToggle()">🔁 Loop</button>
